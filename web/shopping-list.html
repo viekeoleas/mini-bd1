@@ -1,0 +1,472 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мини BD-1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: одна колонка-«техкарта» сборки, секции идут в порядке работы: что строим → что купить → как соединить → шаги → код */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #1b2430;
+  --muted: #5b6676;
+  --line: #d3d9e1;
+  --accent: #d9481f;
+  --accent-soft: #fbe6de;
+  --eye: #2a7fc4;
+  --warn-bg: #fff4d6;
+  --warn-ink: #6b4a00;
+  --code-bg: #1b2430;
+  --code-ink: #e6ebf1;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171e; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+    --accent: #ff7a4d; --accent-soft: #3a2219; --eye: #5fb2f0;
+    --warn-bg: #3a3014; --warn-ink: #f3d98a; --code-bg: #0c1015; --code-ink: #e6ebf1;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171e; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+  --accent: #ff7a4d; --accent-soft: #3a2219; --eye: #5fb2f0;
+  --warn-bg: #3a3014; --warn-ink: #f3d98a; --code-bg: #0c1015; --code-ink: #e6ebf1;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; }
+.wrap { max-width: 880px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; display: flex; flex-direction: column; gap: 56px; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.2; margin: 0; }
+h1 { font-size: clamp(2rem, 6vw, 3.1rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.45rem; font-weight: 700; }
+h3 { font-size: 1.02rem; font-weight: 500; }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--eye); }
+section { display: flex; flex-direction: column; gap: 18px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--f-mono); }
+
+/* hero */
+header { display: grid; grid-template-columns: 1fr minmax(0, 360px); gap: 24px; align-items: center; }
+header .intro { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.lead { font-size: 1.12rem; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.chip { font-family: var(--f-mono); font-size: 0.85rem; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.chip b { color: var(--accent); font-weight: 500; }
+.robot { width: 100%; max-width: 100%; height: auto; }
+.robot .body { fill: var(--surface); stroke: var(--ink); stroke-width: 2.5; }
+.robot .stripe { fill: var(--accent); }
+.robot .limb { stroke: var(--ink); stroke-width: 7; stroke-linecap: round; fill: none; }
+.robot .joint { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
+.robot .eye { fill: var(--eye); }
+.robot .ground { stroke: var(--line); stroke-width: 2; }
+.robot .lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.robot .lead-line { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; fill: none; }
+.robot .dim { stroke: var(--muted); stroke-width: 1; fill: none; }
+
+/* cards & callouts */
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.panel ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; }
+.note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 14px 18px; }
+.note b { font-weight: 600; }
+
+/* shopping table */
+.table-box { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+th, td { padding: 9px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--f-mono); white-space: nowrap; }
+tr.group td { background: var(--bg); font-family: var(--f-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); padding-block: 7px; }
+tr.done td:not(.chk) { color: var(--muted); }
+tr.done .name { text-decoration: line-through; }
+td.chk { width: 34px; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.name { font-weight: 500; }
+a.name { color: var(--eye); text-underline-offset: 2px; }
+.sub { display: block; color: var(--muted); font-size: 0.86rem; margin-top: 2px; }
+.opt { font-family: var(--f-mono); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); margin-left: 6px; white-space: nowrap; }
+.totals { display: flex; flex-wrap: wrap; gap: 10px 28px; font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.totals b { color: var(--accent); font-weight: 500; }
+
+/* wiring */
+.pins td:first-child { font-family: var(--f-mono); white-space: nowrap; }
+
+/* steps */
+ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; counter-reset: s -1; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+ol.steps > li::before { content: counter(s); font-family: var(--f-display); font-weight: 700; font-size: 1.5rem; color: var(--accent); line-height: 1.1; }
+ol.steps .body-txt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ready { font-size: 0.9rem; color: var(--muted); }
+.ready b { color: var(--ink); font-weight: 600; }
+
+/* code */
+.code { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 10px; overflow: hidden; }
+.code .bar { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid #ffffff1a; font-family: var(--f-mono); font-size: 0.78rem; color: #9aa6b5; gap: 10px; }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 0.84rem; line-height: 1.55; }
+.copy { font: inherit; color: var(--code-ink); background: transparent; border: 1px solid #ffffff33; border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+.copy:hover { border-color: var(--accent); }
+.copy:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+code { font-family: var(--f-mono); font-size: 0.9em; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+footer { color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--line); padding-top: 18px; }
+
+@media (max-width: 700px) {
+  header { grid-template-columns: 1fr; }
+  .grid2 { grid-template-columns: 1fr; }
+  ol.steps > li { grid-template-columns: 32px minmax(0, 1fr); padding: 14px; }
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="intro">
+    <span class="eyebrow">Проект для первого робота</span>
+    <h1>Мини BD-1</h1>
+    <p class="lead">Маленький двуногий робот в духе BD-1 из Star Wars Jedi: Fallen Order. Он ходит, крутит головой, светит глазами и пищит. Делаем самым простым путём: обычные сервоприводы, ESP32, ходьба запрограммирована вручную, видеокарта не нужна.</p>
+    <div class="specs">
+      <span class="chip">рост <b>~20 см</b></span>
+      <span class="chip">вес <b>≤ 350 г</b></span>
+      <span class="chip">сервоприводов <b>10</b></span>
+      <span class="chip">детали <b>~2 250 грн</b></span>
+      <span class="chip">срок <b>1–2 мес.</b></span>
+    </div>
+  </div>
+  <svg class="robot" viewBox="0 0 360 300" role="img" aria-label="Схема робота сбоку: корпус, шея с головой, нога с коленом назад, подписаны суставы">
+    <line class="ground" x1="20" y1="282" x2="340" y2="282"/>
+    <!-- dimension -->
+    <line class="dim" x1="40" y1="44" x2="40" y2="282"/>
+    <line class="dim" x1="34" y1="44" x2="46" y2="44"/>
+    <text class="lbl" x="48" y="168">≈ 20 см</text>
+    <!-- leg -->
+    <polyline class="limb" points="170,150 200,196 172,246 182,268"/>
+    <rect class="body" x="150" y="266" width="76" height="14" rx="5"/>
+    <!-- body -->
+    <rect class="body" x="110" y="104" width="128" height="58" rx="26"/>
+    <rect class="stripe" x="128" y="124" width="92" height="7" rx="3"/>
+    <!-- neck + head -->
+    <polyline class="limb" points="222,112 246,74"/>
+    <rect class="body" x="226" y="38" width="82" height="42" rx="14"/>
+    <circle class="eye" cx="291" cy="58" r="8"/>
+    <rect class="stripe" x="236" y="70" width="34" height="5" rx="2"/>
+    <!-- joints -->
+    <circle class="joint" cx="170" cy="150" r="7"/>
+    <circle class="joint" cx="200" cy="196" r="6"/>
+    <circle class="joint" cx="172" cy="246" r="6"/>
+    <circle class="joint" cx="222" cy="112" r="6"/>
+    <circle class="joint" cx="246" cy="74" r="5"/>
+    <!-- labels -->
+    <path class="lead-line" d="M170 150 L100 196"/><text class="lbl" x="58" y="210">бедро ×2</text>
+    <path class="lead-line" d="M200 196 L262 196"/><text class="lbl" x="266" y="200">колено</text>
+    <path class="lead-line" d="M172 246 L100 246"/><text class="lbl" x="58" y="250">стопа</text>
+    <path class="lead-line" d="M246 74 L246 24"/><text class="lbl" x="190" y="18">шея + голова</text>
+  </svg>
+</header>
+
+<section>
+  <span class="eyebrow">Что строим</span>
+  <h2>Устройство робота</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Суставы (10 сервоприводов)</h3>
+      <ul>
+        <li><b>Каждая нога, 4:</b> бедро вбок (переносит вес на одну ногу), бедро вперёд-назад, колено, голеностоп.</li>
+        <li><b>Голова, 2:</b> поворот шеи и наклон головы.</li>
+        <li>Колено смотрит назад, как у BD-1 и у птиц.</li>
+        <li>Стопы делаем шире, чем у настоящего BD-1: тогда он стоит сам и не падает в покое.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Электроника</h3>
+      <ul>
+        <li><b>ESP32</b> — мозг. Есть Wi-Fi, поэтому управлять можно с телефона через веб-страничку.</li>
+        <li><b>PCA9685</b> — плата, которая раздаёт сигнал на 16 сервоприводов по двум проводам.</li>
+        <li><b>MPU6050</b> — датчик наклона, чтобы робот чувствовал, что падает.</li>
+        <li><b>2 × 18650</b> → BMS → понижающий преобразователь XL4015 на 5 В.</li>
+        <li>Пищалка и два RGB-светодиода для «характера».</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>Почему именно такие размеры.</b> Сервопривод MG90S выдаёт около 2 кг·см. Если робот весит 0,35 кг и колено согнуто так, что вес уходит на 4 см от оси, нагрузка 0,35 × 4 = 1,4 кг·см. Запас есть, но небольшой. Поэтому ноги не удлиняем (бедро ~45 мм, голень ~50 мм), а аккумуляторы кладём низко, прямо над бёдрами.</div>
+</section>
+
+<section>
+  <span class="eyebrow">Закупка</span>
+  <h2>Список покупок</h2>
+  <p class="muted">Всё ниже есть в одном украинском магазине <a href="https://arduino.ua" target="_blank" rel="noopener">arduino.ua</a> (Киев, доставка Новой Почтой). Цены и наличие проверены 6 октября 2026 года, перед заказом сверь ещё раз. Галочки сохраняются в твоём браузере.</p>
+  <div class="totals">
+    <span>Обязательное: <b id="t-all">—</b></span>
+    <span>Уже куплено: <b id="t-done">—</b></span>
+    <span>Осталось: <b id="t-left">—</b></span>
+  </div>
+  <div class="table-box">
+    <table id="shop">
+      <thead><tr><th></th><th>Деталь</th><th class="num">Шт</th><th class="num">≈ грн</th></tr></thead>
+      <tbody>
+        <tr class="group"><td colspan="4">Приводы</td></tr>
+        <tr data-id="servo" data-cost="1010"><td class="chk"><input type="checkbox" id="c-servo" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod8252-servoprivid-mg90s-micro-180" target="_blank" rel="noopener">Сервопривод MG90S Micro 180°</a><span class="sub">Металлические шестерни. Бери именно 180°: версия «90°» поворачивается слишком мало, а «360°» вообще не держит угол. От 10 штук цена 101 грн за штуку.</span></td><td class="num">10</td><td class="num">1 010</td></tr>
+
+        <tr class="group"><td colspan="4">Мозги и датчики</td></tr>
+        <tr data-id="esp32" data-cost="295"><td class="chk"><input type="checkbox" id="c-esp32" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/?search=ESP32+DevKit" target="_blank" rel="noopener">ESP32 DevKit V1, 30 pin (код AOC720)</a><span class="sub">Мозг робота, с Wi-Fi.</span></td><td class="num">1</td><td class="num">295</td></tr>
+        <tr data-id="pca" data-cost="169"><td class="chk"><input type="checkbox" id="c-pca" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod1442-16-kanalnii-12-bit-pwmservo-modyl-s-i2c-interfeisom-na-pca9685" target="_blank" rel="noopener">PCA9685, 16-канальный драйвер серво</a><span class="sub">Раздаёт сигнал на все сервоприводы по двум проводам.</span></td><td class="num">1</td><td class="num">169</td></tr>
+        <tr data-id="mpu" data-cost="149"><td class="chk"><input type="checkbox" id="c-mpu" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod512-akselerometr-i-giroskop-mpu-6050-modyl-6dof" target="_blank" rel="noopener">MPU-6050 (GY-521)</a><span class="opt">можно позже</span><span class="sub">Датчик наклона. Нужен только на шаге 9, можно докупить потом.</span></td><td class="num">1</td><td class="num">149</td></tr>
+
+        <tr class="group"><td colspan="4">Питание</td></tr>
+        <tr data-id="cells" data-cost="378"><td class="chk"><input type="checkbox" id="c-cells" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod3516-akkymylyator-liitokala-ncr18650b-3200mach-bez-zashhiti-s-vivodami-pod-paiky" target="_blank" rel="noopener">Аккумулятор 18650 LiitoKala NCR18650B</a><span class="sub">Если дома есть исправные 18650 (например, из старой батареи ноутбука), можно взять их. Две банки должны быть одинаковые и одинаково заряженные.</span></td><td class="num">2</td><td class="num">378</td></tr>
+        <tr data-id="holder" data-cost="38"><td class="chk"><input type="checkbox" id="c-holder" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod7164-batareinii-vidsik-2-x-18650-smd" target="_blank" rel="noopener">Батарейный отсек 2 × 18650</a></td><td class="num">1</td><td class="num">38</td></tr>
+        <tr data-id="bms" data-cost="39"><td class="chk"><input type="checkbox" id="c-bms" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/?search=BMS+2S" target="_blank" rel="noopener">Плата защиты BMS 2S 20A с балансировкой (код AOC840)</a><span class="sub">Защищает аккумуляторы от переразряда и замыкания.</span></td><td class="num">1</td><td class="num">39</td></tr>
+        <tr data-id="charger" data-cost="59"><td class="chk"><input type="checkbox" id="c-charger" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod5916-modyl-bms-li-ion-2s-ip2326" target="_blank" rel="noopener">Модуль зарядки 2S от USB-C (IP2326)</a><span class="sub">Заряжает от обычного телефонного блока питания.</span></td><td class="num">1</td><td class="num">59</td></tr>
+        <tr data-id="ubec" data-cost="79"><td class="chk"><input type="checkbox" id="c-ubec" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod8403-modyl-dc-dc-peretvoruvacha-xl4015e-5a-4-38v" target="_blank" rel="noopener">Понижающий DC-DC XL4015E, 5 А</a><span class="sub">Делает 5 В для сервоприводов и ESP32. Напряжение выставляется винтиком: <b>сначала крутишь до 5,0 В по мультиметру, только потом подключаешь электронику.</b></span></td><td class="num">1</td><td class="num">79</td></tr>
+
+        <tr class="group"><td colspan="4">Характер</td></tr>
+        <tr data-id="buzzer" data-cost="16"><td class="chk"><input type="checkbox" id="c-buzzer" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/prod1153-modyl-s-dinamikom-ky-006-passivnii" target="_blank" rel="noopener">Пассивный зуммер KY-006</a><span class="sub">Писк в стиле BD-1. Сейчас в статусе «ожидается»: если не появится, подойдёт любой пассивный пьезо-зуммер.</span></td><td class="num">1</td><td class="num">16</td></tr>
+        <tr data-id="leds" data-cost="24" data-optional="1"><td class="chk"><input type="checkbox" id="c-leds" aria-label="Куплено"></td><td><a class="name" href="https://arduino.ua/?search=WS2812" target="_blank" rel="noopener">RGB-модуль на WS2812 (код SKV223)</a><span class="opt">по желанию</span><span class="sub">Глаза.</span></td><td class="num">2</td><td class="num">24</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h3>Берём из своих запасов</h3>
+      <ul>
+        <li>Провода, термоусадка, винты M2/M3, макетная плата, штыревые разъёмы.</li>
+        <li><b>Проверь, что есть:</b> конденсатор 1000 мкФ на 16 В или больше, резисторы 100 кОм и 47 кОм, маленький выключатель на 3 А и больше.</li>
+        <li>Если чего-то нет, всё это есть в том же магазине за копейки.</li>
+        <li>PLA ~250 г и немного TPU на подошвы.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Как сэкономить ещё</h3>
+      <ul>
+        <li><b>Свои 18650</b> вместо покупных: минус ~380 грн.</li>
+        <li><b>MPU-6050 и глаза купить потом</b>, когда робот уже пойдёт: минус ~170 грн.</li>
+        <li><b>AliExpress</b>: те же детали заметно дешевле, но ждать 2–4 недели и больше риск нарваться на поддельные сервоприводы.</li>
+        <li>Самый дешёвый старт: около 1 700 грн.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Подключение</span>
+  <h2>Схема соединений</h2>
+  <pre class="mermaid">
+flowchart LR
+  BAT["2 × 18650<br/>7,4–8,4 В"] --> BMS["BMS 2S"] --> SW["Выключатель"] --> UBEC["DC-DC XL4015<br/>5 В 5 А"]
+  CHG["Зарядка USB-C<br/>IP2326"] --> BMS
+  SW --> DIV["Делитель<br/>100k / 47k"] --> ESP
+  UBEC -->|"5 В + 1000 мкФ"| PCA["PCA9685<br/>клеммник V+"]
+  UBEC -->|"5 В на VIN"| ESP["ESP32"]
+  ESP -->|"I2C"| PCA
+  ESP -->|"I2C"| IMU["MPU6050"]
+  PCA --> SERVO["10 × MG90S"]
+  ESP --> BZ["Зуммер"]
+  ESP --> LED["Глаза WS2812"]
+  </pre>
+  <div class="table-box">
+    <table class="pins">
+      <thead><tr><th>Вывод ESP32</th><th>Куда</th></tr></thead>
+      <tbody>
+        <tr><td>GPIO 21 (SDA)</td><td>SDA на PCA9685 и на MPU6050</td></tr>
+        <tr><td>GPIO 22 (SCL)</td><td>SCL на PCA9685 и на MPU6050</td></tr>
+        <tr><td>3V3</td><td>VCC (логика) на PCA9685 и на MPU6050</td></tr>
+        <tr><td>VIN</td><td>+5 В от DC-DC</td></tr>
+        <tr><td>GND</td><td>Общий минус: DC-DC, PCA9685, MPU6050, BMS. <b>Земля везде одна.</b></td></tr>
+        <tr><td>GPIO 25</td><td>Зуммер (второй вывод на GND)</td></tr>
+        <tr><td>GPIO 26</td><td>DIN первого светодиода WS2812</td></tr>
+        <tr><td>GPIO 34</td><td>Средняя точка делителя: батарея → 100 кОм → GPIO 34 → 47 кОм → GND. При 8,4 В на входе будет около 2,7 В.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-box">
+    <table class="pins">
+      <thead><tr><th>Канал PCA9685</th><th>Сустав</th></tr></thead>
+      <tbody>
+        <tr><td>0 · 1 · 2 · 3</td><td>Левая нога: бедро вбок, бедро, колено, голеностоп</td></tr>
+        <tr><td>4 · 5 · 6 · 7</td><td>Правая нога: бедро вбок, бедро, колено, голеностоп</td></tr>
+        <tr><td>8 · 9</td><td>Шея (поворот), голова (наклон)</td></tr>
+        <tr><td>10 – 15</td><td>Свободны: антенны, хвост, что придумаем</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><b>Никогда не питай сервоприводы от USB или от вывода 5V на ESP32.</b> Они тянут слишком много тока, и плата будет перезагружаться или сгорит. Сервоприводы получают питание только через клеммник PCA9685 от DC-DC.</div>
+</section>
+
+<section>
+  <span class="eyebrow">Порядок работы</span>
+  <h2>Шаги сборки</h2>
+  <p class="muted">Каждый шаг заканчивается проверкой. Переходи к следующему, только когда предыдущий работает: так легко понять, что именно сломалось.</p>
+  <ol class="steps">
+    <li><div class="body-txt"><h3>Заказ и подготовка</h3><p>Заказать всё из списка. Пока едет (2–4 недели), поставить PlatformIO и пройти уроки по ESP32.</p><p class="ready"><b>Готово, когда</b> ESP32 мигает встроенным светодиодом и пишет «привет» в монитор порта.</p></div></li>
+    <li><div class="body-txt"><h3>Одна серва</h3><p>ESP32 + PCA9685 + один MG90S. Серво питается от DC-DC на 5 В, а не от USB. Заливаем стартовый скетч ниже и вводим углы в мониторе порта.</p><p class="ready"><b>Готово, когда</b> серва поворачивается на введённый угол, не дрожит и ESP32 не перезагружается.</p></div></li>
+    <li><div class="body-txt"><h3>Питание</h3><p>Спаять отсек, BMS, выключатель и DC-DC. <b>До подключения электроники</b> выставить винтиком на DC-DC 5,0 В по мультиметру и проверить полярность. Зарядить через USB-C модуль, проверить, что заряд останавливается на 8,4 В.</p><p class="ready"><b>Готово, когда</b> ESP32 и серва работают от батареи, без USB.</p></div></li>
+    <li><div class="body-txt"><h3>Калибровка всех серво</h3><p>Каждую серву по очереди выставить программно в 90° и <b>только потом</b> надеть качалку. Записать для каждой min/max импульс и смещение центра.</p><p class="ready"><b>Готово, когда</b> есть таблица из 10 строк: канал, центр, пределы.</p></div></li>
+    <li><div class="body-txt"><h3>Одна нога</h3><p>Нарисовать и напечатать одну ногу: PLA, слой 0,2 мм, 3 периметра, заполнение 30%. Собрать, проверить, что суставы не упираются и не заедают. Исправить модель и напечатать вторую.</p><p class="ready"><b>Готово, когда</b> нога сгибается во всём диапазоне и держит вес груза ~200 г.</p></div></li>
+    <li><div class="body-txt"><h3>Весь робот стоит</h3><p>Корпус, вторая нога, шея и голова. Аккуратно уложить провода. Написать позу «стоять» и плавный переход в неё при включении.</p><p class="ready"><b>Готово, когда</b> робот стоит сам 5 минут и сервоприводы не греются.</p></div></li>
+    <li><div class="body-txt"><h3>Позы и движения</h3><p>Функция «перейти в позу за N мс» с плавной интерполяцией. Наклоны, приседание, перенос веса с ноги на ногу, повороты головы.</p><p class="ready"><b>Готово, когда</b> робот может стоять на одной ноге пару секунд.</p></div></li>
+    <li><div class="body-txt"><h3>Походка</h3><p>Шаг из ключевых поз: перенести вес вбок → поднять свободную ногу → вынести вперёд → поставить → повторить на другую сторону. Потом заменить ручные позы на обратную кинематику: задаём, где должна быть стопа, а углы считает программа.</p><p class="ready"><b>Готово, когда</b> робот проходит метр по ровному столу и не падает.</p></div></li>
+    <li><div class="body-txt"><h3>Баланс по датчику</h3><p>Подключить MPU6050, считать наклон корпуса и чуть подправлять голеностопы и бёдра вбок, если робот кренится.</p><p class="ready"><b>Готово, когда</b> лёгкий толчок пальцем не роняет его.</p></div></li>
+    <li><div class="body-txt"><h3>Характер BD-1</h3><p>Писки разными нотами, моргающие глаза, голова «осматривается» в паузах. Веб-страничка на ESP32 с кнопками и джойстиком: открываешь её с телефона по Wi-Fi.</p><p class="ready"><b>Готово, когда</b> его не стыдно показать друзьям.</p></div></li>
+  </ol>
+</section>
+
+<section>
+  <span class="eyebrow">Код</span>
+  <h2>Стартовый скетч: одна серва</h2>
+  <p>Проект PlatformIO. Код пишем сами, библиотеки берём только для работы с железом.</p>
+  <div class="code">
+    <div class="bar"><span>platformio.ini</span><button class="copy" type="button" data-target="code-ini">Копировать</button></div>
+<pre id="code-ini"><code>[env:esp32dev]
+platform = espressif32
+board = esp32dev
+framework = arduino
+monitor_speed = 115200
+lib_deps =
+  adafruit/Adafruit PWM Servo Driver Library</code></pre>
+  </div>
+  <div class="code">
+    <div class="bar"><span>src/main.cpp</span><button class="copy" type="button" data-target="code-main">Копировать</button></div>
+<pre id="code-main"><code>#include &lt;Arduino.h&gt;
+#include &lt;Wire.h&gt;
+#include &lt;Adafruit_PWMServoDriver.h&gt;
+
+Adafruit_PWMServoDriver pca(0x40);
+
+// Для начала безопасный диапазон 1000–2000 мкс.
+// После калибровки расширим (у MG90S примерно 500–2400).
+const int US_MIN = 1000;
+const int US_MAX = 2000;
+const uint8_t CHANNEL = 0;
+
+void setAngle(uint8_t ch, float deg) {
+  deg = constrain(deg, 0, 180);
+  uint16_t us = US_MIN + (US_MAX - US_MIN) * deg / 180.0;
+  pca.writeMicroseconds(ch, us);
+}
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(21, 22);          // SDA, SCL
+  pca.begin();
+  pca.setOscillatorFrequency(27000000);
+  pca.setPWMFreq(50);          // серво ждут 50 Гц
+  delay(10);
+  setAngle(CHANNEL, 90);
+  Serial.println("Введи угол 0-180 и нажми Enter");
+}
+
+void loop() {
+  if (!Serial.available()) return;
+  String line = Serial.readStringUntil('\n');
+  line.trim();
+  if (line.length() == 0) return;
+  int angle = line.toInt();
+  setAngle(CHANNEL, angle);
+  Serial.printf("угол %d\n", angle);
+}</code></pre>
+  </div>
+  <div class="panel">
+    <h3>Как потом разложим код</h3>
+    <ul>
+      <li><code>servos</code> — калибровка, перевод угла сустава в импульс, программные пределы.</li>
+      <li><code>poses</code> — позы и плавные переходы между ними.</li>
+      <li><code>kinematics</code> — обратная кинематика ноги: позиция стопы → углы.</li>
+      <li><code>gait</code> — цикл шага, скорость и направление.</li>
+      <li><code>balance</code> — чтение MPU6050 и поправки.</li>
+      <li><code>personality</code> — писки, глаза, движения головы.</li>
+      <li><code>web</code> — страничка управления по Wi-Fi.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Чтобы ничего не сгорело</span>
+  <h2>Безопасность и частые ошибки</h2>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Аккумуляторы</h3>
+      <ul>
+        <li>18650 только через BMS. Замыкание даёт десятки ампер: провода плавятся, может быть пожар.</li>
+        <li>Не оставлять заряжаться без присмотра, заряжать на негорючей поверхности.</li>
+        <li>Полярность проверять мультиметром перед каждым первым включением.</li>
+        <li>Вздутый или помятый аккумулятор — сразу в утилизацию.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Если что-то не так</h3>
+      <ul>
+        <li><b>ESP32 перезагружается при движении серво</b> → не хватает питания. Нужны конденсатор, толстые провода питания и общая земля.</li>
+        <li><b>Серва дрожит или гудит</b> → упирается в предел или перегружена. Сузить диапазон, облегчить робота.</li>
+        <li><b>Серва горячая</b> → она держит нагрузку на упоре. Выключить и проверить механику.</li>
+        <li><b>Нога смотрит криво</b> → качалка надета не в центре. Перекалибровать.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Потом</span>
+  <h2>Следующий уровень</h2>
+  <p>Когда этот робот пойдёт, можно сделать вторую версию «как у Open Duck Mini». Обычные серво меняем на шинные с обратной связью (Feetech SCS0009 или STS3032), ESP32 на Raspberry Pi Zero 2W. Потом обучаем ходьбу нейросетью в симуляторе MuJoCo. Опыт с первым роботом там очень пригодится.</p>
+</section>
+
+<footer>Первая версия на обычных сервоприводах, ходьба программируется вручную. Цены arduino.ua на 6 октября 2026 года.</footer>
+</div>
+
+<script>
+(function () {
+  var KEY = "mini-bd1-bought";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  var rows = Array.prototype.slice.call(document.querySelectorAll("#shop tr[data-id]"));
+  var fmt = function (n) { return Math.round(n).toLocaleString("uk-UA") + " грн"; };
+
+  function update() {
+    var all = 0, done = 0;
+    rows.forEach(function (r) {
+      var box = r.querySelector("input");
+      r.classList.toggle("done", box.checked);
+      if (r.dataset.optional) return;
+      var c = parseFloat(r.dataset.cost) || 0;
+      all += c;
+      if (box.checked) done += c;
+    });
+    document.getElementById("t-all").textContent = fmt(all);
+    document.getElementById("t-done").textContent = fmt(done);
+    document.getElementById("t-left").textContent = fmt(all - done);
+  }
+
+  rows.forEach(function (r) {
+    var box = r.querySelector("input");
+    box.checked = !!saved[r.dataset.id];
+    box.addEventListener("change", function () {
+      saved[r.dataset.id] = box.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var el = document.getElementById(btn.dataset.target);
+      var text = el.innerText;
+      var done = function () { btn.textContent = "Скопировано"; setTimeout(function () { btn.textContent = "Копировать"; }, 1500); };
+      var fallback = function () {
+        var range = document.createRange(); range.selectNodeContents(el);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+        btn.textContent = "Выделено, нажми Ctrl+C";
+      };
+      try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+    });
+  });
+})();
+</script>

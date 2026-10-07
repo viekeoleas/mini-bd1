@@ -1,0 +1,557 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мини BD-1: чертежи деталей</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: одна колонка-«альбом чертежей»: решения → проверка размеров → общий вид → электроника → листы деталей → крепёж */
+:root {
+  --bg: #eef1f4;
+  --sheet: #fbfcfd;
+  --surface: #ffffff;
+  --ink: #1b2430;
+  --muted: #5b6676;
+  --line: #d3d9e1;
+  --part: #e3e8ee;
+  --grey: #b9c0c9;
+  --accent: #c23b2e;
+  --axis: #c23b2e;
+  --warn-bg: #fff4d6;
+  --warn-ink: #6b4a00;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171e; --sheet: #161c24; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+    --part: #263040; --grey: #3d4857; --accent: #ff6f5e; --axis: #ff6f5e; --warn-bg: #3a3014; --warn-ink: #f3d98a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171e; --sheet: #161c24; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+  --part: #263040; --grey: #3d4857; --accent: #ff6f5e; --axis: #ff6f5e; --warn-bg: #3a3014; --warn-ink: #f3d98a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 64px; display: flex; flex-direction: column; gap: 44px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: clamp(1.7rem, 4.6vw, 2.6rem); font-weight: 700; }
+h2 { font-size: 1.3rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 500; }
+p { margin: 0; max-width: 72ch; }
+section { display: flex; flex-direction: column; gap: 16px; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+.mono { font-family: var(--f-mono); }
+header { display: flex; flex-direction: column; gap: 10px; }
+.note { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 14px 18px; }
+.decisions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.dec b { font-weight: 600; }
+.table-box { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { padding: 8px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font-family: var(--f-mono); font-weight: 500; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+td.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+a { color: var(--accent); }
+
+.sheet { background: var(--sheet); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.sheet-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.tag { font-family: var(--f-mono); font-size: 0.78rem; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); }
+.tag.id { color: var(--accent); border-color: var(--accent); }
+.views { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: flex-end; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: 100%; }
+figcaption { font-family: var(--f-mono); font-size: 0.74rem; color: var(--muted); letter-spacing: 0.04em; text-transform: uppercase; }
+.draw { max-width: 100%; height: auto; display: block; }
+.spec { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 20px; font-size: 0.9rem; }
+.spec div { min-width: 0; }
+.spec dt { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.spec dd { margin: 2px 0 0; }
+dl { margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 10px; border-radius: 2px; border: 1.5px dashed; display: inline-block; }
+ol.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; max-width: 80ch; }
+
+/* drawing primitives */
+.draw text { fill: var(--ink); font-family: var(--f-mono); }
+.draw .t-muted { fill: var(--muted); }
+.draw .part { fill: var(--part); stroke: var(--ink); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.draw .void { fill: var(--sheet); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.draw .hole { fill: var(--sheet); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.draw .hidden { fill: none; stroke: var(--ink); stroke-width: 0.9; stroke-dasharray: var(--d2); vector-effect: non-scaling-stroke; opacity: 0.75; }
+.draw .grey { fill: var(--grey); stroke: var(--ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.draw .paint { fill: none; stroke: var(--accent); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.draw .lens { fill: #4f8fff; fill-opacity: 0.35; stroke: #4f8fff; stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.draw .axis { fill: none; stroke: var(--axis); stroke-width: 0.9; stroke-dasharray: var(--d3); vector-effect: non-scaling-stroke; }
+.draw .ground { fill: none; stroke: var(--muted); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.draw .rod { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.draw .dim { fill: none; stroke: var(--muted); stroke-width: 0.9; vector-effect: non-scaling-stroke; }
+.draw .cm { fill-opacity: 0.2; stroke-width: 1.3; stroke-dasharray: var(--d1); vector-effect: non-scaling-stroke; }
+.c-servo { fill: #e08a2e; stroke: #e08a2e; }
+.c-pca { fill: #2f6fd0; stroke: #2f6fd0; }
+.c-dcdc { fill: #2a9d8f; stroke: #2a9d8f; }
+.c-mpu { fill: #8a5cd6; stroke: #8a5cd6; }
+.c-esp { fill: #7b8aa0; stroke: #7b8aa0; }
+.c-lipo { fill: #d4a017; stroke: #d4a017; }
+.c-bms { fill: #3aa35b; stroke: #3aa35b; }
+.c-ip { fill: #c2569b; stroke: #c2569b; }
+.c-buzz { fill: #3aa3a3; stroke: #3aa3a3; }
+.c-led { fill: #4f8fff; stroke: #4f8fff; }
+.c-plug { fill: #b0703a; stroke: #b0703a; }
+.c-wire { fill: #e08a2e; stroke: #e08a2e; }
+
+footer { color: var(--muted); font-size: 0.88rem; border-top: 1px solid var(--line); padding-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 760px) {
+  .decisions, .spec { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">Чертежи v0.2 · черновик для Fusion</span>
+  <h1>Мини BD-1: детали для печати</h1>
+  <p class="muted">15 видов деталей, 29 штук. Все размеры в миллиметрах. Это техническое задание для модели в Fusion: формы упрощены до коробок и цилиндров, но гнёзда под электронику, оси и крепёж посчитаны по реальным размерам компонентов.</p>
+</header>
+
+<section>
+  <span class="eyebrow">Что поменялось</span>
+  <h2>Решения после раскладки электроники</h2>
+  <p>Когда я разложил реальные платы и сервоприводы по корпусу, прежний план не влез. Ниже то, что пришлось поменять, и почему.</p>
+  <div class="decisions">
+    <div class="dec"><b>Аккумулятор: купленные 2 × 18650, в голове</b><span class="muted">Отсек 77 × 41 × 21 мм лежит на полке над серво наклона головы, ровно над осью наклона. Робот весит около 430 г. Симуляция показывает, что это нормально: колено вынесено вперёд всего на 20 мм, и самая большая нагрузка — около 1 кг·см, половина предела MG90S.</span></div>
+    <div class="dec"><b>Наклон вбок перенесён с бедра в голеностоп</b><span class="muted">Четыре сервопривода в узком тазу не помещаются. В голеностопе наклон работает так же: робот сдвигает корпус вбок над опорной ногой. Плюс тяжёлые сервоприводы оказываются ниже, и центр тяжести тоже.</span></div>
+    <div class="dec"><b>Сервоприводы бёдер живут в бёдрах</b><span class="muted">Качалка крепится к бобышке на боку таза, а корпус сервопривода поворачивается вместе с бедром. Поэтому таз узкий, 36 мм, и ноги стоят близко: 84 мм между осями. Чем ближе ноги, тем меньше раскачка при шаге.</span></div>
+    <div class="dec"><b>Разделили силовую часть и мозги</b><span class="muted">В тазу: DC-DC, PCA9685 и датчик наклона, рядом с сервоприводами и короткими силовыми проводами. В голове: аккумулятор, BMS, зарядка, ESP32, пищалка, глаза. Через шею идут 6 проводов.</span></div>
+  </div>
+  <div class="note">Размеры робота выросли: рост около <b>240 мм</b> до верха головы (с антеннами около 285), голова 104 × 72 × 63, таз 36 × 70 × 50, бедро и голень по 40 мм, вес около 430 г. Голова кивает только на ±15°, иначе задевает вилку шеи.</div>
+</section>
+
+<section>
+  <span class="eyebrow">Перед моделированием</span>
+  <h2>Проверь штангенциркулем</h2>
+  <p>Китайские клоны отличаются на полмиллиметра и больше. Гнёзда в чертежах рассчитаны на эти номинальные размеры плюс зазор 0,2 мм на сторону. Если твои детали другие, поменяем размеры в модели.</p>
+  <div class="table-box">
+    <table>
+      <thead><tr><th>Компонент</th><th>Размер, мм</th><th>Что важно измерить</th></tr></thead>
+      <tbody>
+        <tr><td>Сервопривод MG90S</td><td class="num">22,8 × 12,2 × 22,7</td><td>Ушки 32,2 в длину, толщина 2,5, низ ушек на 15,7 от дна. Ось вала в 5,9 от торца. Верх шлица на 31 от дна.</td></tr>
+        <tr><td>Качалка (одноплечая)</td><td class="num">ступица Ø7, плечо 4,2 × 16</td><td>Положение отверстий на плече: у каждой партии своё.</td></tr>
+        <tr><td>ESP32 DevKit V1, 30 pin</td><td class="num">51,5 × 28,3, высота 13</td><td>Высота с пинами, положение USB-разъёма.</td></tr>
+        <tr><td>PCA9685</td><td class="num">62,2 × 25,4</td><td>Отверстия Ø2,5 в 3,2 от краёв, высота штырей 11.</td></tr>
+        <tr><td>DC-DC XL4015E</td><td class="num">54 × 24 × 16</td><td>Высота с дросселем и радиатором.</td></tr>
+        <tr><td>MPU-6050 (GY-521)</td><td class="num">21,2 × 16,4</td><td>Отверстия Ø3, межцентровое 15,2.</td></tr>
+        <tr><td>BMS 2S 20A</td><td class="num">≈ 45 × 20 × 4</td><td>Размер у разных продавцов разный, мерить обязательно.</td></tr>
+        <tr><td>Модуль зарядки IP2326</td><td class="num">≈ 25 × 17 × 5</td><td>Где стоит USB-C и насколько он выступает за плату.</td></tr>
+        <tr><td>Отсек 2 × 18650</td><td class="num">≈ 77 × 41 × 21</td><td>Размер отсека с вставленными аккумуляторами и выводами.</td></tr>
+        <tr><td>Линза глаза (кабошон)</td><td class="num">Ø20 × 6</td><td>Стеклянный кабошон с плоским дном из магазина для рукоделия.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Общий вид</span>
+  <h2>Сборка и главные оси</h2>
+  <p>Пунктир-точка — оси вращения суставов. Оранжевым пунктиром показаны сервоприводы внутри деталей.</p>
+  <div class="sheet"><div class="views" id="overview"></div><div class="legend" id="lg-overview"></div></div>
+</section>
+
+<section>
+  <span class="eyebrow">Электроника</span>
+  <h2>Где что стоит</h2>
+  <p>Таз отвечает за силовую часть и сервоприводы, голова — за питание и мозги. Высокие разъёмы сервоприводов на PCA9685 не помещаются, если плата лежит, поэтому плата стоит вертикально у левой стенки, а штекеры смотрят вправо.</p>
+  <div class="sheet"><div class="views" id="layout"></div><div class="legend" id="lg-layout"></div></div>
+  <div class="table-box">
+    <table>
+      <thead><tr><th>Провод через шею</th><th>Сечение</th><th>Откуда → куда</th></tr></thead>
+      <tbody>
+        <tr><td>BAT+ после выключателя</td><td class="num">22 AWG</td><td>BMS в голове → вход DC-DC в тазу</td></tr>
+        <tr><td>GND</td><td class="num">22 AWG</td><td>общий минус головы и таза</td></tr>
+        <tr><td>+5 В</td><td class="num">24 AWG</td><td>выход DC-DC → VIN ESP32 и питание серво наклона головы</td></tr>
+        <tr><td>SDA</td><td class="num">26 AWG</td><td>ESP32 GPIO 21 → PCA9685 и MPU-6050</td></tr>
+        <tr><td>SCL</td><td class="num">26 AWG</td><td>ESP32 GPIO 22 → PCA9685 и MPU-6050</td></tr>
+        <tr><td>Сигнал серво наклона</td><td class="num">26 AWG</td><td>канал 9 PCA9685 → серво в голове</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Провода идут по пазу на задней стороне стойки шеи и через левый паз в дне головы. Оставь петлю около 40 мм, чтобы поворот на ±90° не дёргал провода. Серво поворота шеи стоит в стойке и не вращается, его кабель уходит прямо в таз.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Детали</span>
+  <h2>Список для печати</h2>
+  <div class="table-box">
+    <table>
+      <thead><tr><th>№</th><th>Деталь</th><th>Шт</th><th>Материал</th><th>Что держит</th><th>≈ г</th></tr></thead>
+      <tbody id="parts-table"></tbody>
+    </table>
+  </div>
+  <p class="muted">Общие настройки: сопло 0,4, слой 0,2 мм. Корпусные детали — 3 периметра и 15% заполнения. Детали ног и вилка — 4 периметра и 30%. Гнёзда под сервоприводы печатай без поддержек. Вес пластика — грубая оценка, около 130 г на всё.</p>
+</section>
+
+<div id="sheets" style="display:flex;flex-direction:column;gap:22px"></div>
+
+<section>
+  <span class="eyebrow">Крепёж</span>
+  <h2>Винты и оси</h2>
+  <div class="table-box">
+    <table>
+      <thead><tr><th>Что</th><th>Шт</th><th>Куда</th></tr></thead>
+      <tbody>
+        <tr><td>Саморез M2 × 6</td><td class="num">32</td><td>ушки 10 сервоприводов (20), PCA9685 (4), MPU-6050 (2), боковые диски (6)</td></tr>
+        <tr><td>Винт M3 × 16 + гайка с нейлоновым кольцом</td><td class="num">7</td><td>оси-опоры: колени 2, голеностопы 2, наклон стоп 2, наклон головы 1</td></tr>
+        <tr><td>Винт M3 × 10 + гайка</td><td class="num">2</td><td>стойка шеи к крышке таза</td></tr>
+        <tr><td>Саморез M3 × 10</td><td class="num">6</td><td>крышка таза (2), верх головы (4)</td></tr>
+        <tr><td>Винты качалок</td><td class="num">из комплекта</td><td>качалки к деталям и к валам</td></tr>
+        <tr><td>Пруток Ø2 × 50</td><td class="num">2</td><td>антенны, вклеить</td></tr>
+        <tr><td>Липучка-ремешок 10 мм</td><td class="num">1</td><td>отсек 18650 на полке головы</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Порядок сборки</span>
+  <h2>Что ставить раньше</h2>
+  <p>В тазу и голове тесно, и часть винтов закрывается платами. Если собирать в другом порядке, придётся разбирать.</p>
+  <ol class="steps">
+    <li>Таз: прикрути качалки бёдер к бобышкам снаружи. Затем изнутри вкрути центральные винты в валы сервоприводов бёдер. Только после этого ставь PCA9685: она закроет доступ к левому винту.</li>
+    <li>Таз: DC-DC на двусторонний скотч на дно. Перед установкой выстави на нём 5,0 В по мультиметру.</li>
+    <li>Таз: MPU-6050 на две стойки у передней стенки, стрелкой оси Y вперёд.</li>
+    <li>Шея: серво поворота в стойку сверху, кабель вниз через крышку таза. Стойку прикрути к крышке двумя M3.</li>
+    <li>Голова: серво наклона в ложемент на дне, опорная чашка на его дно. Вилку надень через пазы в дне и закрепи ось M3.</li>
+    <li>Голова: BMS у левой стенки, модуль зарядки у задней, полка, отсек 18650 на липучке. Последним ESP32 на крышке.</li>
+  </ol>
+</section>
+
+<footer>
+  <span>Версия 0.2, 7 октября 2026 года: вернули купленные 18650. Это расчётный черновик, а не проверенная модель: до первой печати детали не собирались даже виртуально.</span>
+  <span>Дальше: переносим в Fusion параметрами, проверяем столкновения при движении суставов и печатаем сначала одну ногу и таз.</span>
+</footer>
+</div>
+
+<script>
+(function () {
+  // ---------- tiny drawing kit (mm, y up) ----------
+  var R = function (x1, y1, x2, y2, k, lab) { return { t: 'r', x1: Math.min(x1, x2), y1: Math.min(y1, y2), x2: Math.max(x1, x2), y2: Math.max(y1, y2), k: k, lab: lab }; };
+  var C = function (x, y, d, k) { return { t: 'c', x: x, y: y, d: d, k: k }; };
+  var P = function (pts, k) { return { t: 'p', pts: pts, k: k }; };
+  var L = function (pts, k) { return { t: 'l', pts: pts, k: k }; };
+  var DH = function (x1, x2, y, s) { return { t: 'dh', x1: x1, x2: x2, y: y, s: s }; };
+  var DV = function (y1, y2, x, s) { return { t: 'dv', y1: y1, y2: y2, x: x, s: s }; };
+  var T = function (x, y, s, a, k) { return { t: 'txt', x: x, y: y, s: s, a: a || 'start', k: k }; };
+  var X = function (x, y) { return { t: 'x', x: x, y: y }; };
+
+  function band(p1, p2, w, k) {
+    var dx = p2[0] - p1[0], dy = p2[1] - p1[1], l = Math.hypot(dx, dy);
+    var nx = -dy / l * w / 2, ny = dx / l * w / 2;
+    return P([[p1[0] + nx, p1[1] + ny], [p2[0] + nx, p2[1] + ny], [p2[0] - nx, p2[1] - ny], [p1[0] - nx, p1[1] - ny]], k);
+  }
+  function toe(bx, by, len, w, deg, k) {
+    var a = deg * Math.PI / 180, dx = Math.sin(a), dy = Math.cos(a), nx = Math.cos(a) * w / 2, ny = -Math.sin(a) * w / 2;
+    return P([[bx + nx, by + ny], [bx + nx + dx * len, by + ny + dy * len], [bx - nx + dx * len, by - ny + dy * len], [bx - nx, by - ny]], k);
+  }
+  function mirror(list) {
+    return list.map(function (s) {
+      var o = Object.assign({}, s);
+      if (s.t === 'r') { o.x1 = -s.x2; o.x2 = -s.x1; }
+      else if (s.t === 'c' || s.t === 'x') { o.x = -s.x; }
+      else if (s.t === 'p' || s.t === 'l') { o.pts = s.pts.map(function (p) { return [-p[0], p[1]]; }); }
+      else if (s.t === 'txt') { o.x = -s.x; o.a = s.a === 'start' ? 'end' : s.a === 'end' ? 'start' : 'middle'; }
+      return o;
+    });
+  }
+  var COLS = { servo: '#e08a2e', pca: '#2f6fd0', dcdc: '#2a9d8f', mpu: '#8a5cd6', esp: '#7b8aa0', lipo: '#d4a017', bms: '#3aa35b', ip: '#c2569b', buzz: '#3aa3a3', led: '#4f8fff', plug: '#b0703a', wire: '#e08a2e' };
+  var COMP = { servo: 'сервопривод MG90S', pca: 'PCA9685', dcdc: 'DC-DC XL4015', mpu: 'MPU-6050', esp: 'ESP32', lipo: '2 × 18650', bms: 'BMS 2S', ip: 'зарядка IP2326', buzz: 'зуммер', led: 'WS2812', plug: 'штекеры серво', wire: 'провода шеи' };
+  var usedComps = {};
+
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function render(view) {
+    var sc = view.scale, fs = 11 / sc, m = 8 / sc;
+    var bx = [Infinity, -Infinity], by = [Infinity, -Infinity];
+    function grow(x, y) { if (x < bx[0]) bx[0] = x; if (x > bx[1]) bx[1] = x; if (y < by[0]) by[0] = y; if (y > by[1]) by[1] = y; }
+    view.shapes.forEach(function (s) {
+      if (s.t === 'r') { grow(s.x1, s.y1); grow(s.x2, s.y2); }
+      else if (s.t === 'c') { grow(s.x - s.d / 2, s.y - s.d / 2); grow(s.x + s.d / 2, s.y + s.d / 2); }
+      else if (s.t === 'p' || s.t === 'l') s.pts.forEach(function (p) { grow(p[0], p[1]); });
+      else if (s.t === 'dh') { grow(s.x1, s.y - fs * 0.4); grow(s.x2, s.y + fs * 1.4); }
+      else if (s.t === 'dv') { grow(s.x - fs * 1.4, s.y1); grow(s.x + fs * 0.4, s.y2); }
+      else if (s.t === 'txt') { var w = s.s.length * fs * 0.6; var x0 = s.a === 'end' ? s.x - w : s.a === 'middle' ? s.x - w / 2 : s.x; grow(x0, s.y - fs * 0.3); grow(x0 + w, s.y + fs); }
+      else if (s.t === 'x') grow(s.x, s.y);
+    });
+    var vx = bx[0] - m, vy = -(by[1] + m), vw = bx[1] - bx[0] + 2 * m, vh = by[1] - by[0] + 2 * m;
+    var out = [];
+    var tk = 4 / sc;
+    view.shapes.forEach(function (s) {
+      var cls = s.k || 'part';
+      var isComp = COMP[cls];
+      if (isComp) usedComps[cls] = 1;
+      var c = isComp ? 'cm c-' + cls : cls;
+      if (s.t === 'r') {
+        out.push('<rect class="' + c + '" x="' + s.x1 + '" y="' + (-s.y2) + '" width="' + (s.x2 - s.x1) + '" height="' + (s.y2 - s.y1) + '"/>');
+        if (s.lab) out.push('<text x="' + ((s.x1 + s.x2) / 2) + '" y="' + (-(s.y1 + s.y2) / 2 + fs * 0.32) + '" font-size="' + (fs * 0.82) + '" text-anchor="middle" class="t-muted">' + esc(s.lab) + '</text>');
+      } else if (s.t === 'c') {
+        out.push('<circle class="' + c + '" cx="' + s.x + '" cy="' + (-s.y) + '" r="' + s.d / 2 + '"/>');
+      } else if (s.t === 'p') {
+        out.push('<polygon class="' + c + '" points="' + s.pts.map(function (p) { return p[0] + ',' + (-p[1]); }).join(' ') + '"/>');
+      } else if (s.t === 'l') {
+        out.push('<polyline class="' + c + '" points="' + s.pts.map(function (p) { return p[0] + ',' + (-p[1]); }).join(' ') + '"/>');
+      } else if (s.t === 'x') {
+        var r = 3 / sc * 1.6;
+        out.push('<path class="axis" style="stroke-dasharray:none" d="M' + (s.x - r) + ' ' + (-s.y) + 'H' + (s.x + r) + 'M' + s.x + ' ' + (-s.y - r) + 'V' + (-s.y + r) + '"/>');
+      } else if (s.t === 'dh') {
+        var Y = -s.y;
+        out.push('<path class="dim" d="M' + s.x1 + ' ' + Y + 'H' + s.x2 + 'M' + (s.x1 - tk) + ' ' + (Y + tk) + 'L' + (s.x1 + tk) + ' ' + (Y - tk) + 'M' + (s.x2 - tk) + ' ' + (Y + tk) + 'L' + (s.x2 + tk) + ' ' + (Y - tk) + '"/>');
+        out.push('<text x="' + ((s.x1 + s.x2) / 2) + '" y="' + (Y - fs * 0.35) + '" font-size="' + fs + '" text-anchor="middle">' + esc(s.s) + '</text>');
+      } else if (s.t === 'dv') {
+        var y1 = -s.y1, y2 = -s.y2, X0 = s.x;
+        out.push('<path class="dim" d="M' + X0 + ' ' + y1 + 'V' + y2 + 'M' + (X0 - tk) + ' ' + (y1 + tk) + 'L' + (X0 + tk) + ' ' + (y1 - tk) + 'M' + (X0 - tk) + ' ' + (y2 + tk) + 'L' + (X0 + tk) + ' ' + (y2 - tk) + '"/>');
+        var my = (y1 + y2) / 2;
+        out.push('<text x="' + (X0 - fs * 0.35) + '" y="' + my + '" font-size="' + fs + '" text-anchor="middle" transform="rotate(-90 ' + (X0 - fs * 0.35) + ' ' + my + ')">' + esc(s.s) + '</text>');
+      } else if (s.t === 'txt') {
+        out.push('<text x="' + s.x + '" y="' + (-s.y) + '" font-size="' + fs + '" text-anchor="' + s.a + '"' + (s.k === 'muted' ? ' class="t-muted"' : '') + '>' + esc(s.s) + '</text>');
+      }
+    });
+    var style = '--d1:' + (4 / sc) + ' ' + (2.5 / sc) + ';--d2:' + (3 / sc) + ' ' + (2 / sc) + ';--d3:' + (10 / sc) + ' ' + (3 / sc) + ' ' + (2 / sc) + ' ' + (3 / sc);
+    return '<figure><svg class="draw" role="img" aria-label="' + esc(view.name) + '" viewBox="' + [vx, vy, vw, vh].join(' ') + '" width="' + Math.round(vw * sc) + '" style="' + style + '">' + out.join('') + '</svg><figcaption>' + esc(view.name) + ' · ' + (view.scaleNote || ('масштаб ' + view.scale + ' px/мм')) + '</figcaption></figure>';
+  }
+  function legend(el, keys) {
+    el.innerHTML = keys.map(function (k) { return '<span><i class="sw" style="border-color:' + COLS[k] + '"></i>' + COMP[k] + '</span>'; }).join('') +
+      '<span><i class="sw" style="border-color:var(--axis);border-style:dashed"></i>ось сустава</span>';
+  }
+  function take() { var k = Object.keys(usedComps); usedComps = {}; return k; }
+
+  // ---------- key numbers ----------
+  var ANK = 35, KNEE = [20, 69.6], HIP = 104.2, PB = 79.2, PT = 129.2, LID = 131.6, COL = 152.6, YB = 169.9, PITCH = 188.9, HB = 176.9, HM = 221.9, HT = 239.9;
+
+  // ---------- overview ----------
+  var sideAsm = [
+    L([[-62, 0], [82, 0]], 'ground'),
+    R(-24, 0, 38, 3), R(-23.5, 3, -20.5, 19), R(17.5, 3, 20.5, 19),
+    R(-15.5, 9.9, 15.5, 22.1, 'servo'),
+    R(-16, 22.1, 16, 25.1), R(-7, 25.1, 7, ANK), C(0, ANK, 14),
+    band([0, ANK], KNEE, 18), band(KNEE, [0, HIP], 18), C(KNEE[0], KNEE[1], 16),
+    R(-35, PB, 35, PT), R(-35, PT, 35, LID), C(0, HIP, 24),
+    R(-31.5, LID, 20.5, LID + 3), R(-23.5, LID + 3, 12.5, COL),
+    R(-16.9, COL - 15.7, 5.9, COL + 7, 'servo'),
+    R(-13, YB, 13, YB + 3),
+    R(-52, HB, 52, HM), R(-52, HM, 52, HT), R(52, HT - 6, 60, HT),
+    R(-26, HT, 34, HT + 1.2, 'grey'),
+    C(-20, HB + 24, 34), C(-20, HB + 24, 27, 'paint'), C(-20, HB + 24, 19, 'paint'),
+    R(-16.9, PITCH - 6.1, 5.9, PITCH + 6.1, 'servo'), R(-7, YB + 3, 7, PITCH, 'hidden'),
+    R(-38.5, HB + 22, 38.5, HB + 43, 'lipo'), R(-50, HB + 49.4, 1.5, HB + 51, 'esp'),
+    L([[-32, HT], [-40, HT + 45.3]], 'rod'),
+    L([[0, 0], [0, HT + 6]], 'axis'),
+    X(0, 16), X(0, ANK), X(KNEE[0], KNEE[1]), X(0, HIP), X(0, PITCH),
+    DV(0, HT, -80, '≈ 240 до верха головы'), DV(0, HIP, -66, '104 ось бедра'), DV(0, ANK, 46, '35'),
+    DH(-52, 52, HT + 10, '104'),
+    T(66, HB + 22, 'голова'), T(66, PB + 22, 'таз'), T(30, 88, 'бедро'), T(16, 46, 'голень'), T(24, 26, 'скоба'), T(42, 2, 'стопа')
+  ];
+  var frontLeg = [
+    R(22, 0, 62, 3), R(36.1, 9.9, 58.9, 22.1, 'servo'), R(21.5, 22.1, 64, 25.1), R(21.5, 25.1, 24.5, 42), R(59.5, 25.1, 62.5, 42),
+    R(24.5, 33, 46.7, 60), R(26.5, 29.1, 57.5, 51.9, 'servo'),
+    R(21.5, 51.6, 62.5, 53.6), R(21.5, 53.6, 24.5, 76.6), R(59.5, 53.6, 62.5, 76.6),
+    R(24.5, 62, 46.7, 90), R(26.5, 63.7, 57.5, 86.5, 'servo'),
+    R(37.8, 90, 59.5, 127.8), R(26.5, 98.3, 57.5, 121.1, 'servo'),
+    R(18, 92.2, 24.5, 116.2)
+  ];
+  var frontAsm = [L([[-80, 0], [80, 0]], 'ground')].concat(frontLeg, mirror(frontLeg), [
+    R(-18, PB, 18, PT), R(-18, PT, 18, LID),
+    R(-14, LID, 14, LID + 3), R(-10, LID + 3, 10, COL), R(-6.1, COL - 15.7, 6.1, COL + 7, 'servo'),
+    R(-23, YB, 23, YB + 3), R(-21.5, YB + 3, -18.5, PITCH + 7, 'hidden'), R(18.5, YB + 3, 21.5, PITCH + 7, 'hidden'),
+    R(-36, HB, 36, HM), R(-36, HM, 36, HT), R(-26, HT, 26, HT + 1.2, 'grey'),
+    C(14, HB + 24, 20, 'lens'), C(-18, HB + 24, 14), C(-18, HB + 24, 9, 'hidden'),
+    R(36, HB + 7, 40, HB + 41), R(-40, HB + 7, -36, HB + 41),
+    R(-13.5, PITCH - 6.1, 17.5, PITCH + 6.1, 'servo'),
+    L([[22, HT], [30, HT + 45.3]], 'rod'), L([[-22, HT], [-30, HT + 45.3]], 'rod'),
+    L([[0, 0], [0, HT + 6]], 'axis'), L([[42, 0], [42, 130]], 'axis'), L([[-42, 0], [-42, 130]], 'axis'),
+    DH(-42, 42, -9, '84 между осями ног'), DH(-62.5, 62.5, -20, '125 ширина'), DH(-36, 36, HT + 10, '72')
+  ]);
+  var ov = document.getElementById('overview');
+  ov.innerHTML = render({ name: 'Вид сбоку, нос вправо', scale: 2.4, shapes: sideAsm }) + render({ name: 'Вид спереди', scale: 2.4, shapes: frontAsm });
+  legend(document.getElementById('lg-overview'), take());
+
+  // ---------- electronics layout ----------
+  var pelvisFront = [
+    R(-18, 0, 18, 50), R(-16, 2.5, 16, 50, 'void'), R(-18, 50, 18, 52.4),
+    R(18, 13, 24.5, 37), R(-24.5, 13, -18, 37),
+    R(-18, 22.5, -16, 27.5, 'hole'), R(16, 22.5, 18, 27.5, 'hole'),
+    R(-16, 21.2, -12, 23.2), R(-16, 40.2, -12, 42.2), R(10, 40, 16, 50),
+    R(-12, 2.5, 12, 18.5, 'dcdc', 'DC-DC'), R(-12, 19, -10.4, 44.4, 'pca'), R(-10.4, 19, 14.6, 32, 'plug', 'штекеры'),
+    R(-10.6, 33, 10.6, 46, 'mpu', 'MPU у передней стенки'),
+    L([[-32, 25], [32, 25]], 'axis'),
+    DH(-18, 18, 57, '36'), DV(0, 50, -28, '50'), DV(0, 25, 30, '25 ось бёдер'),
+    T(-13, 46.5, 'PCA9685', 'start', 'muted')
+  ];
+  var pelvisTop = [
+    R(-18, -35, 18, 35), R(-16, -33, 16, 33, 'void'),
+    R(18, -12, 24.5, 12), R(-24.5, -12, -18, 12),
+    R(16, -30, 18, -18, 'hole'), R(-18, -30, -16, -18, 'hole'),
+    R(-16, -28.95, -12, -26.95), R(-16, 26.95, -12, 28.95),
+    R(-12, -27, 12, 27, 'dcdc'), R(-12, -31.1, -10.4, 31.1, 'pca'), R(-10.4, -25, 14.6, 25, 'plug'),
+    R(-10.6, 29.4, 10.6, 31, 'mpu'), C(13, -20, 6), C(13, 20, 6), C(13, -20, 2.5, 'hole'), C(13, 20, 2.5, 'hole'),
+    DH(-18, 18, -42, '36'), DV(-35, 35, -30, '70'),
+    T(0, 38, 'перед', 'middle', 'muted')
+  ];
+  var headSide = [
+    R(-52, 0, 52, 45), R(-50, 2.5, 50, 45, 'void'), R(-52, 45, 52, 63), R(52, 57, 60, 63),
+    R(-40, 20, 40, 22),
+    R(-38.5, 22, 38.5, 43, 'lipo', '2 × 18650'), R(-16.9, 5.9, 5.9, 18.1, 'servo'),
+    R(-7, -4, 7, 12, 'hidden'), R(-13, -7, 13, -4, 'hidden'),
+    R(-50, 49.4, 1.5, 51, 'esp'), R(-34, 46.2, -10, 49.4, 'esp', 'ESP32 на крышке'),
+    R(-50, 2.5, -33, 7.5, 'ip'), R(-30, 3, 15, 19, 'bms', 'BMS у левой стенки'),
+    R(-26, 18, -14, 30, 'buzz'), R(44, 19, 47, 29, 'led'), R(52, 14, 56, 34, 'lens'),
+    L([[-32, 63], [-40, 108]], 'rod'),
+    L([[-60, 12], [62, 12]], 'axis'), L([[0, -8], [0, 67]], 'axis'),
+    DH(-52, 52, -14, '104'), DV(0, 63, -60, '63'), DV(0, 45, 66, '45 низ'), DV(0, 12, 20, '12'),
+    T(-46, 9, 'USB-C', 'start', 'muted'), T(10, 8, 'наклон', 'start', 'muted')
+  ];
+  var headTop = [
+    R(-36, -52, 36, 52), R(-34, -50, 34, 50, 'void'), R(-30, 52, 30, 60, 'hidden'),
+    R(-20.5, -38.5, 20.5, 38.5, 'lipo'), R(-13.5, -16.9, 17.5, 5.9, 'servo'),
+    R(17, -13, 23, 13, 'hole'), R(-23, -13, -17, 13, 'hole'),
+    R(-34, -30, -30, 15, 'bms'), R(5.5, -50, 30.5, -33, 'ip'), R(26, -26, 34, -14, 'buzz'),
+    R(-14.15, -50, 14.15, 1.5, 'esp'),
+    R(9, 44, 19, 47, 'led'), R(-23, 44, -13, 47, 'led'), R(4, 50, 24, 52, 'lens'), R(-25, 50, -11, 52),
+    C(30, 46, 7), C(-30, 46, 7), C(30, -46, 7), C(-30, -46, 7),
+    R(13, -52, 23, -50, 'hole'), R(-21, -52, -15, -50, 'hole'),
+    L([[-46, 0], [46, 0]], 'axis'),
+    DH(-36, 36, -60, '72'), DV(-52, 52, -44, '104'),
+    T(0, 63, 'перед', 'middle', 'muted'), T(18, -56, 'USB-C', 'middle', 'muted'), T(-18, -56, 'выкл.', 'middle', 'muted')
+  ];
+  var lay = document.getElementById('layout');
+  lay.innerHTML = render({ name: 'Таз, разрез спереди', scale: 5, shapes: pelvisFront }) + render({ name: 'Таз сверху, без крышки', scale: 4, shapes: pelvisTop }) +
+    render({ name: 'Голова, разрез сбоку, нос вправо', scale: 3.4, shapes: headSide }) + render({ name: 'Голова сверху, без крышки', scale: 3.4, shapes: headTop });
+  legend(document.getElementById('lg-layout'), take());
+
+  // ---------- part sheets ----------
+  var parts = [
+    { id: 'P1', name: 'Таз — корпус', qty: 1, mat: 'PLA', holds: 'PCA9685, DC-DC, MPU-6050, качалки бёдер', g: 18,
+      print: 'Дном на стол, без поддержек. 4 периметра, 20%.', hw: 'Винты качалок; 4 × M2 для PCA9685; 2 × M2 для MPU-6050.',
+      notes: 'Бобышки Ø24 на боках — это ось бёдер: на них крепятся качалки, корпус сервопривода крутится вместе с бедром. Стенки 2 мм, дно 2,5. Пазы 12 × 6 сзади сверху — для кабелей ноги.',
+      views: [
+        { name: 'Вид слева', scale: 4, shapes: [R(-35, 0, 35, 50), C(0, 25, 24), C(0, 25, 7.4, 'hidden'), R(-2.2, 25, 2.2, 41, 'hidden'), C(0, 25, 5, 'hole'), C(0, 34, 1.6, 'hole'), C(0, 38, 1.6, 'hole'), R(-30, 40, -18, 46, 'hole'), L([[-42, 25], [42, 25]], 'axis'), DH(-35, 35, -8, '70'), DV(0, 50, -42, '50'), DV(0, 25, 42, '25'), T(0, 54, 'Ø24 бобышка, Ø5 доступ к винту', 'middle', 'muted'), T(-24, 58, 'паз кабелей', 'middle', 'muted')] },
+        { name: 'Сверху, без крышки', scale: 4, shapes: pelvisTop.filter(function (s) { return !COMP[s.k]; }).concat([R(-12, -27, 12, 27, 'hidden'), T(0, 0, 'место DC-DC', 'middle', 'muted')]) },
+        { name: 'Разрез спереди', scale: 4, shapes: pelvisFront.filter(function (s) { return !COMP[s.k]; }) }
+      ] },
+    { id: 'P2', name: 'Таз — крышка', qty: 1, mat: 'PLA', holds: 'стойку шеи', g: 5,
+      print: 'Верхом вниз, без поддержек. 3 периметра, 20%.', hw: '2 × саморез M3 × 10 в бобышки таза; 2 × M3 × 10 с гайкой для стойки шеи.',
+      notes: 'Слева у крышки зацеп под кромку стенки, справа два винта. Паз 8 × 12 в центре — для кабеля серво поворота и 6 проводов шеи.',
+      views: [
+        { name: 'Сверху', scale: 4, shapes: [R(-18, -35, 18, 35), R(-15.6, -32.6, 15.6, 32.6, 'hidden'), C(13, -20, 3.4, 'hole'), C(13, 20, 3.4, 'hole'), C(0, -27.5, 3.4, 'hole'), C(0, 16.5, 3.4, 'hole'), R(-4, -11.5, 4, 0.5, 'hole'), R(-17, -28, -15, 28, 'hidden'), L([[0, -40], [0, 40]], 'axis'), DH(-18, 18, -42, '36'), DV(-35, 35, -26, '70'), DV(-27.5, 16.5, 26, '44 оси винтов шеи'), T(0, 38, 'перед', 'middle', 'muted'), T(-16, 31, 'зацеп', 'start', 'muted')] },
+        { name: 'Разрез спереди', scale: 4, shapes: [R(-18, 0, 18, 2.4), R(-15.6, -2, -14, 0), R(14, -2, 15.6, 0), R(-18, 2.4, -14, 4), DH(-18, 18, 8, '36'), DV(-2, 2.4, 24, '2,4 + бортик 2')] }
+      ] },
+    { id: 'P3', name: 'Шея — стойка', qty: 1, mat: 'PLA', holds: 'серво поворота шеи', g: 6,
+      print: 'Фланцем на стол, без поддержек. 4 периметра, 30%.', hw: '2 × M2 × 6 для ушек серво; 2 × M3 × 10 с гайками к крышке таза.',
+      notes: 'Серво вставляется сверху, ушки ложатся на верхний край. Ось вала совпадает с центром таза: гнездо сдвинуто на 5,5 мм назад от оси. Канал Ø6 в дне выводит кабель серво в таз, паз 6 × 4 сзади — для проводов шеи.',
+      views: [
+        { name: 'Спереди', scale: 5, shapes: [R(-14, 0, 14, 3), R(-10, 3, 10, 21), R(-6.3, 5.3, 6.3, 21, 'hidden'), R(-3, 0, 3, 5.3, 'hidden'), DH(-14, 14, -6, '28'), DH(-10, 10, 25, '20'), DV(0, 21, -20, '21'), DV(5.3, 21, 14, '15,7')] },
+        { name: 'Сверху (ось вала — крестик)', scale: 5, shapes: [R(-14, -26, 14, 26), R(-10, -18, 10, 18), R(-6.3, -16.3, 6.3, 16.3, 'hidden'), R(-6.3, -11.6, 6.3, 11.6, 'void'), C(0, 13.9, 1.6, 'hole'), C(0, -13.9, 1.6, 'hole'), C(0, 22, 3.4, 'hole'), C(0, -22, 3.4, 'hole'), R(-3, -26, 3, -22, 'hidden'), X(0, 5.5), DH(-14, 14, -32, '28'), DV(-26, 26, -20, '52'), DV(-11.6, 11.6, 16, '23,2'), T(0, 29, 'перед', 'middle', 'muted')] }
+      ] },
+    { id: 'P4', name: 'Вилка наклона головы', qty: 1, mat: 'PLA', holds: 'голову на двух осях', g: 3,
+      print: 'Основанием на стол. 4 периметра, 40%: деталь нагружена.', hw: 'Винты качалок; 1 × M3 × 16 с гайкой — ось слева.',
+      notes: 'Снизу — гнездо под качалку серво поворота, справа на внутренней стороне — под качалку серво наклона. Отверстие Ø5 в центре нужно, чтобы достать отвёрткой до винта вала.',
+      views: [
+        { name: 'Спереди', scale: 5, shapes: [R(-23, 0, 23, 3), R(-21.5, 3, -18.5, 19), R(18.5, 3, 21.5, 19), R(-21.5, 19, -18.5, 26), R(18.5, 19, 21.5, 26), C(-20, 19, 3, 'hole'), R(18.5, 15, 19.5, 23, 'hidden'), L([[-30, 19], [30, 19]], 'axis'), DH(-23, 23, -6, '46'), DH(-18.5, 18.5, 30, '37 внутри'), DV(0, 19, -30, '19 до оси')] },
+        { name: 'Снизу', scale: 5, shapes: [R(-23, -13, 23, 13), R(-21.5, -7, -18.5, 7, 'hidden'), R(18.5, -7, 21.5, 7, 'hidden'), C(0, 0, 7.4, 'hidden'), R(0, -2.2, 18, 2.2, 'hidden'), C(0, 0, 5, 'hole'), C(10, 0, 1.6, 'hole'), C(14, 0, 1.6, 'hole'), DH(-23, 23, -19, '46'), DV(-13, 13, -28, '26')] }
+      ] },
+    { id: 'P5', name: 'Голова — низ', qty: 1, mat: 'PLA', holds: 'серво наклона, 2 × 18650, BMS, зарядку, зуммер, светодиоды глаз', g: 25,
+      print: 'Дном на стол. Отверстия глаза и фонаря печатаются без поддержек. 3 периметра, 15%.', hw: '2 × M2 × 6 для ушек серво наклона; 4 × M3 × 10 саморезы для крышки; 6 × M2 × 6 для дисков; 2 × M2 для выключателя.',
+      notes: 'Ось наклона на 12 мм выше дна, в центре по длине. Полка на высоте 20 мм держит отсек 2 × 18650 над серво, центр отсека ровно над осью наклона. Пазы 6 × 26 в дне — для лап вилки, левый также для проводов шеи. Канавки 0,6 мм по бокам — разметка красных полос.',
+      views: [
+        { name: 'Сверху', scale: 3, shapes: headTop.filter(function (s) { return !COMP[s.k] && s.k !== 'lens'; }).concat([R(-3.8, -21.9, 2.2, -16.9), R(-3.8, 5.9, 2.2, 10.9), R(-40, -40, 40, 40, 'hidden'), T(0, 30, 'полка под 2 × 18650', 'middle', 'muted'), R(-13.5, -16.9, 17.5, 5.9, 'hidden')]) },
+        { name: 'Спереди', scale: 3, shapes: [R(-36, 0, 36, 45), C(14, 24, 20.4, 'hole'), C(-18, 24, 14, 'hole'), R(-36, 37, 36, 39, 'paint'), DH(-36, 36, -8, '72'), DV(0, 45, -44, '45'), DV(0, 24, 44, '24 центры'), DH(-18, 14, 46, '32')] },
+        { name: 'Сзади', scale: 3, shapes: [R(-36, 0, 36, 45), R(13, 5.75, 23, 10.25, 'hole'), R(-21, 8.5, -15, 11.5, 'hole'), C(-25.5, 10, 1.6, 'hole'), C(-10.5, 10, 1.6, 'hole'), DH(13, 23, 15, 'USB-C 10 × 4,5'), DH(-25.5, -10.5, -6, 'выкл. 15'), DH(-36, 36, 46, '72')] },
+        { name: 'Справа', scale: 3, shapes: [R(-52, 0, 52, 45), C(-20, 24, 34, 'hidden'), C(-20 + 13, 24, 1.6, 'hole'), C(-20 - 6.5, 24 + 11.26, 1.6, 'hole'), C(-20 - 6.5, 24 - 11.26, 1.6, 'hole'), C(-20, 24, 2, 'hole'), C(-17, 24, 2, 'hole'), C(-23, 24, 2, 'hole'), C(-18.5, 26.6, 2, 'hole'), C(-21.5, 26.6, 2, 'hole'), C(-18.5, 21.4, 2, 'hole'), C(-21.5, 21.4, 2, 'hole'), R(-17, 2, 17, 5, 'hidden'), R(-52, 37, 52, 39, 'paint'), DH(-52, 52, -8, '104'), DV(0, 24, 60, '24'), DH(-52, -20, 46, '32'), T(0, 9, 'пазы вилки (в дне)', 'middle', 'muted')] }
+      ] },
+    { id: 'P6', name: 'Голова — верх', qty: 1, mat: 'PLA, панель серым', holds: 'ESP32, антенны', g: 13,
+      print: 'Верхом вниз, козырёк без поддержек (скос 45° снизу). 3 периметра, 15%.', hw: '4 × M3 × 10 саморезы в низ головы; 2 стяжки или защёлки для ESP32.',
+      notes: 'ESP32 висит на крышке пинами вверх, модулем вниз: между модулем и отсеком 18650 остаётся около 3 мм. Вырез 12 × 8 в задней стенке — для USB. Отверстия антенн Ø2,1 под наклоном 10° назад и наружу.',
+      views: [
+        { name: 'Сверху', scale: 3, shapes: [R(-36, -52, 36, 52), R(-30, 52, 30, 60), R(-26, -27, 26, 35, 'grey'), C(22, -32, 2.1, 'hole'), C(-22, -32, 2.1, 'hole'), C(30, 46, 3.4, 'hole'), C(-30, 46, 3.4, 'hole'), C(30, -46, 3.4, 'hole'), C(-30, -46, 3.4, 'hole'), R(-14.15, -50, 14.15, 1.5, 'hidden'), DH(-36, 36, -60, '72'), DV(-52, 60, -44, '112 с козырьком'), DH(-22, 22, -40, '44 антенны'), T(0, 10, 'ESP32 снизу', 'middle', 'muted')] },
+        { name: 'Сбоку, нос вправо', scale: 3, shapes: [R(-52, 0, 52, 18), R(-50, 0, 50, 15.5, 'void'), R(52, 12, 60, 18), R(-50, 4.4, 1.5, 6, 'hidden'), R(-34, 1.2, -10, 4.4, 'hidden'), R(-36, 6, -28, 15.5), R(-52, 0, -50, 8, 'hole'), DH(-52, 60, -8, '112'), DV(0, 18, 64, '18'), T(-32, 22, 'бобышка антенны', 'middle', 'muted')] }
+      ] },
+    { id: 'P7', name: 'Боковой диск', qty: 2, mat: 'PLA, кольца красным', holds: 'декор; правый — решётка зуммера', g: 2,
+      print: 'Лицом вверх. 3 периметра, 20%.', hw: '3 × M2 × 6 на диск.',
+      notes: 'Два рельефных кольца по 1 мм — красить или клеить красную плёнку. У правого диска 7 отверстий Ø2 в центре, звук зуммера выходит через них.',
+      views: [
+        { name: 'Лицо (правый)', scale: 6, shapes: [C(0, 0, 34), C(0, 0, 30, 'paint'), C(0, 0, 27, 'paint'), C(0, 0, 22, 'paint'), C(0, 0, 19, 'paint'), C(0, 0, 12), C(0, 13, 2.2, 'hole'), C(11.26, -6.5, 2.2, 'hole'), C(-11.26, -6.5, 2.2, 'hole'), C(0, 0, 2, 'hole'), C(3, 0, 2, 'hole'), C(-3, 0, 2, 'hole'), C(1.5, 2.6, 2, 'hole'), C(-1.5, 2.6, 2, 'hole'), C(1.5, -2.6, 2, 'hole'), C(-1.5, -2.6, 2, 'hole'), DH(-17, 17, -22, 'Ø34'), T(0, 22, 'отверстия M2 по Ø26', 'middle', 'muted')] },
+        { name: 'Разрез', scale: 6, shapes: [R(0, -17, 4, 17), R(4, -15, 5, -13.5), R(4, 13.5, 5, 15), R(4, -11, 5, -9.5), R(4, 9.5, 5, 11), R(4, -6, 7, 6), DV(-17, 17, -6, '34'), DH(0, 7, -21, '7')] }
+      ] },
+    { id: 'P8', name: 'Оправы глаза и фонаря', qty: 2, mat: 'PLA тёмно-серый', holds: 'линзу Ø20 и светодиоды', g: 2,
+      print: 'Бортиком вниз. 3 периметра, 100%.', hw: 'Клей: оправы на перед головы, кабошон в оправу.',
+      notes: 'Глаз: кабошон Ø20 упирается в бортик Ø18, за ним WS2812 светит синим. Фонарь: в оправу вклеивается кружок белого матового пластика или калька.',
+      views: [
+        { name: 'Глаз и фонарь, лицо', scale: 6, shapes: [C(0, 0, 28), C(0, 0, 20.4, 'hole'), C(0, 0, 18, 'hidden'), C(30, 0, 22), C(30, 0, 14, 'hole'), C(30, 0, 12, 'hidden'), DH(-14, 14, -19, 'Ø28 / Ø20,4'), DH(19, 41, 16, 'Ø22 / Ø14')] },
+        { name: 'Разрез глаза', scale: 6, shapes: [R(0, 10.2, 6, 14), R(0, -14, 6, -10.2), R(5, 9, 6, 10.2), R(5, -10.2, 6, -9), DH(0, 6, -19, '6'), DV(-10.2, 10.2, 10, '20,4')] }
+      ] },
+    { id: 'P9', name: 'Бедро', qty: 2, mat: 'PLA', holds: 'серво бедра (сверху) и серво колена (снизу)', g: 9,
+      print: 'Наружной стороной на стол. 4 периметра, 30%. Правое — зеркально.', hw: '4 × M2 × 6 для ушек; винты качалки колена.',
+      notes: 'Верх и низ бедра сдвинуты по X: серво бедра торчит валом внутрь (к тазу), серво колена — наружу. Перемычка между ними не уже 9 мм. Сзади паз 4 × 3 под кабели. X — от центра робота, левая нога.',
+      views: [
+        { name: 'Спереди (ось бедра — 0)', scale: 4, shapes: [R(37.8, -12.6, 59.5, 23.6), R(24.5, -47.9, 46.7, -16.4), R(37.8, -18, 46.7, -10), R(26.5, -5.9, 57.5, 16.9, 'servo'), R(26.5, -45.9, 57.5, -23.1, 'servo'), C(25.5, -40, 8, 'hole'), L([[20, 0], [64, 0]], 'axis'), L([[20, -40], [64, -40]], 'axis'), DV(-40, 0, 66, '40 оси'), DH(37.8, 59.5, 28, '21,7'), DH(24.5, 46.7, -54, '22,2'), T(22, -36, 'Ø8 под чашку', 'end', 'muted')] },
+        { name: 'Сбоку', scale: 4, shapes: [R(-8.1, -12.6, 8.1, 23.6), R(-8.1, -47.9, 8.1, -12.6), R(-8.1, -40, -5, 18, 'hidden'), R(-6.1, -5.9, 6.1, 16.9, 'servo'), R(-6.1, -45.9, 6.1, -23.1, 'servo'), DH(-8.1, 8.1, 28, '16,2'), T(-12, -2, 'паз кабелей', 'end', 'muted')] }
+      ] },
+    { id: 'P10', name: 'Голень', qty: 2, mat: 'PLA', holds: 'серво голеностопа', g: 9,
+      print: 'Наружной стороной на стол. 4 периметра, 30%. Правая — зеркально.', hw: '2 × M2 × 6; 1 × M3 × 16 ось колена; винты качалки.',
+      notes: 'Сверху вилка: наружная лапа садится на качалку колена, внутренняя — на ось M3 через опорную чашку. Внутри вилки 35 мм. Снизу гнездо серво голеностопа валом наружу.',
+      views: [
+        { name: 'Спереди (ось колена — 0)', scale: 4, shapes: [R(21.5, -18, 24.5, 7), R(59.5, -18, 62.5, 7), R(21.5, -20, 62.5, -18), R(24.5, -47.9, 46.7, -18), R(26.5, -45.9, 57.5, -23.1, 'servo'), C(23, 0, 3.2, 'hole'), R(59.5, -3.7, 60.5, 3.7, 'hidden'), C(25.5, -40, 8, 'hole'), L([[16, 0], [68, 0]], 'axis'), L([[16, -40], [68, -40]], 'axis'), DV(-40, 0, 70, '40 оси'), DH(24.5, 59.5, 12, '35 внутри'), DH(21.5, 62.5, -54, '41')] },
+        { name: 'Сбоку', scale: 4, shapes: [R(-7, -18, 7, 7), R(-8.1, -47.9, 8.1, -18), R(-6.1, -45.9, 6.1, -23.1, 'servo'), DH(-7, 7, 12, '14'), DH(-8.1, 8.1, -54, '16,2')] }
+      ] },
+    { id: 'P11', name: 'Скоба голеностопа', qty: 2, mat: 'PLA', holds: 'серво наклона стопы', g: 5,
+      print: 'Основанием на стол, стенку для ушек — вертикально. 4 периметра, 40%.', hw: '2 × M2 × 6; 1 × M3 × 16 ось голеностопа; винты качалки.',
+      notes: 'Вилка такая же, как у голени: 35 мм внутри. Снизу висит серво наклона стопы валом вперёд, ушками на поперечную стенку с окном 23,2 × 12,6.',
+      views: [
+        { name: 'Спереди (ось голеностопа — 0)', scale: 4, shapes: [R(21.5, -9.9, 24.5, 7), R(59.5, -9.9, 62.5, 7), R(21.5, -12.9, 64, -9.9), R(36.1, -25.1, 58.9, -12.9, 'servo'), C(23, 0, 3.2, 'hole'), X(42, -19), L([[16, 0], [68, 0]], 'axis'), DH(21.5, 64, 12, '42,5'), DV(-19, 0, 70, '19 до оси стопы')] },
+        { name: 'Сбоку, нос вправо', scale: 4, shapes: [R(-16, -12.9, 16, -9.9), R(0.2, -25.1, 2.7, -9.9), R(-7, -9.9, 7, 7), R(-15.5, -25.1, 15.5, -12.9, 'servo'), L([[-20, -19], [22, -19]], 'axis'), DH(-16, 16, 12, '32'), T(1.5, -29, 'стенка с окном', 'middle', 'muted')] }
+      ] },
+    { id: 'P12', name: 'Стопа', qty: 2, mat: 'PLA', holds: 'качалку серво наклона', g: 6,
+      print: 'Подошвой на стол, ушки вертикально. 4 периметра, 30%. Правая — зеркально.', hw: '1 × M3 × 16 задняя ось; винты качалки спереди.',
+      notes: 'Три пальца вперёд и пятка дают опору примерно 40 × 62 мм. Ось наклона стопы на 16 мм над полом. Под серво оставлен зазор 6 мм, чтобы стопа наклонялась на ±20°.',
+      views: [
+        { name: 'Сверху (X — от оси ноги)', scale: 4, shapes: [R(-10, -24, 10, -8), R(-12, -14, 12, 12), R(-5, -8, 5, 38), toe(6, 6, 30, 8, 25), toe(-6, 6, 30, 8, -25), R(-8, -23.5, 8, -20.5, 'hidden'), R(-8, 17.5, 8, 20.5, 'hidden'), DH(-22, 22, -30, '≈ 44'), DV(-24, 38, -26, '62'), T(0, 42, 'перед', 'middle', 'muted')] },
+        { name: 'Сбоку, нос вправо', scale: 4, shapes: [R(-24, 0, 38, 3), R(-23.5, 3, -20.5, 19), R(17.5, 3, 20.5, 19), C(-22, 16, 3.2, 'hole'), R(17.5, 12.3, 18.5, 19.7, 'hidden'), R(-15.5, 9.9, 15.5, 22.1, 'servo'), R(-24, -1.5, 38, 0, 'hidden'), L([[-28, 16], [42, 16]], 'axis'), DV(0, 16, 44, '16'), DH(-20.5, 17.5, 26, '38 между ушками'), T(8, -6, 'подошва TPU 1,5', 'middle', 'muted')] }
+      ] },
+    { id: 'P13', name: 'Подошва', qty: 2, mat: 'TPU', holds: 'сцепление с полом', g: 2,
+      print: 'Плоско, 100%, медленно.', hw: 'Клей для TPU или двусторонний скотч.',
+      notes: 'Контур повторяет низ стопы P12, толщина 1,5 мм.', views: [] },
+    { id: 'P14', name: 'Опорная чашка серво', qty: 7, mat: 'PLA', holds: 'вторую опору сустава', g: 1,
+      print: 'Бобышкой вверх. 100%.', hw: 'Надевается на дно серво, фиксируется каплей клея. Ось — винт M3 × 16.',
+      notes: 'Даёт суставу вторую опору напротив качалки, иначе вся нагрузка ложится на подшипник серво. Бобышка соосна валу: смещена на 5,5 мм от центра чашки. Нужны на коленях, голеностопах, стопах и наклоне головы.',
+      views: [
+        { name: 'Снизу', scale: 7, shapes: [R(-13.2, -7.9, 13.2, 7.9), R(-11.6, -6.3, 11.6, 6.3, 'hidden'), C(5.5, 0, 7), C(5.5, 0, 3.2, 'hole'), DH(-13.2, 13.2, -12, '26,4'), DV(-7.9, 7.9, -17, '15,8'), DH(0, 5.5, 10, '5,5')] },
+        { name: 'Разрез', scale: 7, shapes: [R(-13.2, 0, 13.2, 2), R(-13.2, 2, -11.6, 8), R(11.6, 2, 13.2, 8), R(2, -3, 9, 0), R(4.9, -3, 6.1, 2, 'void'), DV(-3, 8, 17, '11'), DV(2, 8, -17, '6 глубина')] }
+      ] },
+    { id: 'P15', name: 'Наконечник антенны', qty: 2, mat: 'PLA чёрный', holds: 'декор', g: 0.3,
+      print: 'Стоя, 100%.', hw: 'Клей на пруток Ø2.', notes: 'Цилиндр Ø5 × 9 с глухим отверстием Ø2,1 × 6.',
+      views: [{ name: 'Сбоку', scale: 8, shapes: [R(-2.5, 0, 2.5, 9), R(-1.05, 0, 1.05, 6, 'hidden'), DH(-2.5, 2.5, -3, 'Ø5'), DV(0, 9, -6, '9')] }] }
+  ];
+
+  var tb = document.getElementById('parts-table');
+  tb.innerHTML = parts.map(function (p) {
+    return '<tr><td class="num"><a href="#' + p.id + '">' + p.id + '</a></td><td>' + esc(p.name) + '</td><td class="num">' + p.qty + '</td><td>' + esc(p.mat) + '</td><td>' + esc(p.holds) + '</td><td class="num">' + String(p.g).replace('.', ',') + '</td></tr>';
+  }).join('');
+
+  var sheets = document.getElementById('sheets');
+  sheets.innerHTML = parts.map(function (p) {
+    var vs = p.views.map(render).join('');
+    var lg = take();
+    return '<article class="sheet" id="' + p.id + '">' +
+      '<div class="sheet-head"><span class="tag id">' + p.id + '</span><h3>' + esc(p.name) + '</h3><span class="tag">× ' + p.qty + '</span><span class="tag">' + esc(p.mat) + '</span></div>' +
+      (vs ? '<div class="views">' + vs + '</div>' : '') +
+      (lg.length ? '<div class="legend">' + lg.map(function (k) { return '<span><i class="sw" style="border-color:' + COLS[k] + '"></i>' + COMP[k] + '</span>'; }).join('') + '</div>' : '') +
+      '<dl class="spec"><div><dt>Печать</dt><dd>' + esc(p.print) + '</dd></div><div><dt>Крепёж</dt><dd>' + esc(p.hw) + '</dd></div><div><dt>Заметки</dt><dd>' + esc(p.notes) + '</dd></div></dl>' +
+      '</article>';
+  }).join('');
+})();
+</script>

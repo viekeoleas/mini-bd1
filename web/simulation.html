@@ -1,0 +1,680 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мини BD-1 в 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 3D-сцена сверху, под ней пульт; ниже таблица 10 каналов PCA9685 (угол, нагрузка) и панель равновесия; внизу — как устроен шаг */
+:root {
+  --bg: #eef1f4;
+  --surface: #ffffff;
+  --ink: #1b2430;
+  --muted: #5b6676;
+  --line: #d3d9e1;
+  --accent: #c23b2e;
+  --servo: #e08a2e;
+  --good: #2f9e5b;
+  --warn: #d49a16;
+  --bad: #d6402f;
+  --stage: #e3e8ee;
+  --grid-a: #b9c2cd;
+  --grid-b: #d0d7df;
+  --f-display: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12171e; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+    --accent: #ff6f5e; --stage: #171d26; --grid-a: #3a4554; --grid-b: #262f3b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12171e; --surface: #1a212b; --ink: #e6ebf1; --muted: #9aa6b5; --line: #2c3542;
+  --accent: #ff6f5e; --stage: #171d26; --grid-a: #3a4554; --grid-b: #262f3b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 22px 56px; display: flex; flex-direction: column; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.5rem, 4vw, 2.2rem); margin: 0; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-weight: 500; font-size: 1rem; margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 0.76rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lead { margin: 0; color: var(--muted); max-width: 62ch; }
+p { margin: 0; max-width: 72ch; }
+
+.stage { position: relative; height: clamp(360px, 60vh, 640px); border-radius: 12px; overflow: hidden; background: var(--stage); border: 1px solid var(--line); }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+.hud { position: absolute; left: 12px; top: 10px; right: 12px; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; font-family: var(--f-mono); font-size: 0.76rem; color: var(--muted); }
+.fail { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+.phases { display: grid; grid-template-columns: 12fr 26fr 12fr 12fr 26fr 12fr; gap: 3px; position: relative; }
+.phases div { font-family: var(--f-mono); font-size: 0.68rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.phases div.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.group { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); padding: 3px; gap: 2px; }
+.label { font-family: var(--f-mono); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+button { font: inherit; font-size: 0.9rem; color: var(--ink); background: transparent; border: 0; border-radius: 999px; padding: 6px 13px; cursor: pointer; }
+button:hover { background: var(--bg); }
+button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.solo { border: 1px solid var(--line); background: var(--surface); }
+.speed { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 0.8rem; color: var(--muted); }
+
+.cols { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ch { display: grid; grid-template-columns: 22px minmax(0, 1.25fr) 46px minmax(70px, 1fr) minmax(90px, 1.1fr); gap: 4px 10px; align-items: center; padding: 5px 6px; border-radius: 8px; }
+.ch:hover, .ch.hl { background: var(--bg); }
+.ch .n { font-family: var(--f-mono); color: var(--accent); font-size: 0.8rem; }
+.ch .nm { font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ch .ang { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 0.85rem; text-align: right; }
+.ch input[type=range] { width: 100%; accent-color: var(--servo); }
+.ch input[disabled] { opacity: 0.55; }
+.load { position: relative; height: 16px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.load .bar { position: absolute; left: 0; top: 0; bottom: 0; background: var(--good); width: 0; }
+.load .pk { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); opacity: 0.6; }
+.load .lim { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bad); left: 83.3%; }
+.load span { position: absolute; right: 4px; top: 0; font-family: var(--f-mono); font-size: 0.68rem; line-height: 16px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.chhead { display: grid; grid-template-columns: 22px minmax(0, 1.25fr) 46px minmax(70px, 1fr) minmax(90px, 1.1fr); gap: 4px 10px; padding: 0 6px; font-family: var(--f-mono); font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.chhead span:nth-child(3) { text-align: right; }
+dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+dt { color: var(--muted); }
+dd { margin: 0; font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.state { font-weight: 600; }
+.state.ok { color: var(--good); }
+.state.bad { color: var(--bad); }
+.small { font-size: 0.86rem; color: var(--muted); }
+ol.steps { margin: 0; padding-left: 1.3em; display: flex; flex-direction: column; gap: 6px; }
+.callout { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 8px; padding: 12px 14px; }
+footer { color: var(--muted); font-size: 0.86rem; }
+
+@media (max-width: 860px) {
+  .cols { grid-template-columns: 1fr; }
+  .phases div { font-size: 0.6rem; padding: 3px 2px; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <span class="eyebrow">Симуляция суставов · v0.2</span>
+      <h1>Мини BD-1</h1>
+    </div>
+    <p class="lead">Все 10 сервоприводов в том виде, как их разложили по чертежам. Видно, какой серво что двигает, какой угол он держит, какую нагрузку тянет и где центр тяжести.</p>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="3D-симуляция робота Мини BD-1"></canvas>
+    <div class="hud"><span>тяни — вращать · колесо — масштаб</span><span id="hudr"></span></div>
+  </div>
+
+  <div class="phases" id="phases" aria-label="Фазы шага">
+    <div>наклон на правую</div><div>шаг левой</div><div>выпрямиться</div><div>наклон на левую</div><div>шаг правой</div><div>выпрямиться</div>
+  </div>
+
+  <div class="controls">
+    <span class="label">Режим</span>
+    <div class="group" role="group" aria-label="Режим">
+      <button type="button" id="m-walk" data-mode="walk">Ходьба</button>
+      <button type="button" id="m-stand" data-mode="stand">Стоит</button>
+      <button type="button" id="m-look" data-mode="look">Осматривается</button>
+      <button type="button" id="m-manual" data-mode="manual">Ручное</button>
+    </div>
+    <label class="speed" for="speed">скорость <input type="range" id="speed" min="0.2" max="1.5" step="0.1" value="1"> <span id="speedv">1,0×</span></label>
+    <button type="button" class="solo" id="t-shell" aria-pressed="false">Прозрачный корпус</button>
+    <button type="button" class="solo" id="t-axes" aria-pressed="true">Оси суставов</button>
+    <button type="button" class="solo" id="t-com" aria-pressed="true">Центр тяжести</button>
+    <button type="button" class="solo" id="beep">Пискнуть</button>
+  </div>
+
+  <div class="cols">
+    <section class="panel">
+      <h2>Каналы PCA9685</h2>
+      <p class="small">Наведи на строку — серво подсветится. Угол — команда серво, 90° = поза «стоит». Полоса — статическая нагрузка; красная черта — предел MG90S при 4,8 В (2,0 кг·см), тёмная — пик за последние секунды.</p>
+      <div class="chhead"><span>#</span><span>Сустав</span><span>Угол</span><span>Ручное</span><span>Нагрузка, кг·см</span></div>
+      <div id="chans"></div>
+    </section>
+    <section class="panel">
+      <h2>Равновесие</h2>
+      <dl>
+        <dt>Опора</dt><dd id="v-sup">—</dd>
+        <dt>Центр тяжести</dt><dd id="v-com" class="state">—</dd>
+        <dt>Запас до края опоры</dt><dd id="v-margin">—</dd>
+        <dt>Высота ЦТ над полом</dt><dd id="v-h">—</dd>
+        <dt>Масса модели</dt><dd id="v-m">—</dd>
+        <dt>Наклон корпуса</dt><dd id="v-tilt">—</dd>
+      </dl>
+      <p class="small">Красная точка на полу — проекция центра тяжести, заливка — площадь опоры. Пока точка внутри, робот не падает.</p>
+      <div class="callout small" id="verdict">Считаю нагрузку…</div>
+      <p class="small">В начале наклона центр тяжести ещё не над опорной стопой, и робот опирается на край второй стопы. Это видно в строке «Опора».</p>
+    </section>
+  </div>
+
+  <section class="panel">
+    <h2>Как устроен один шаг</h2>
+    <ol class="steps">
+      <li><b>Наклон на опорную ногу.</b> Оба серво наклона стоп (каналы 3 и 7) поворачиваются на 19°. Весь робот кренится над правой стопой, левая стопа отрывается от пола примерно на 27 мм. Стопы остаются параллельны полу.</li>
+      <li><b>Шаг.</b> Пока робот стоит на одной ноге, левые бедро, колено и голеностоп (каналы 0, 1, 2) выносят стопу на 30 мм вперёд. Одновременно правые (4, 5, 6) отводят опорную стопу назад, и корпус едет вперёд.</li>
+      <li><b>Выпрямиться.</b> Серво стоп возвращаются в 0, левая стопа встаёт на пол. Робот снова на двух ногах.</li>
+      <li><b>То же зеркально</b> на левую ногу. Полный цикл — два шага, около 4 секунд. Голова (8 и 9) в это время может смотреть по сторонам.</li>
+    </ol>
+    <p class="small">Колено, бедро и голеностоп одной ноги всегда работают вместе: программа задаёт, где должна оказаться стопа, и пересчитывает это в три угла (обратная кинематика). Голеностоп при этом держит стопу параллельно полу.</p>
+  </section>
+
+  <footer>Кинематическая модель: суставы двигаются по программе, удары и проскальзывание не моделируются. Массы и размеры взяты из чертежей v0.1 с 2 × 18650 в голове; после сборки взвесим детали и уточним.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('c');
+  function fail(msg) { var d = document.createElement('div'); d.className = 'fail'; d.textContent = msg; stage.appendChild(d); }
+  if (!window.THREE || !THREE.OrbitControls) { fail('Не загрузилась 3D-библиотека. Обнови страницу.'); return; }
+  var renderer;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true }); }
+  catch (e) { fail('Браузер не поддерживает WebGL, поэтому 3D-модель не показать.'); return; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var D2R = Math.PI / 180;
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(32, 1, 1, 8000);
+  camera.position.set(330, 230, 380);
+  var controls = new THREE.OrbitControls(camera, canvas);
+  controls.target.set(0, 120, 0);
+  controls.enableDamping = true;
+  controls.minDistance = 160; controls.maxDistance = 1200;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.update();
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x7d8590, 0.75));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.85);
+  sun.position.set(220, 460, 260); sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  ['left', 'bottom'].forEach(function (k) { sun.shadow.camera[k] = -300; });
+  ['right', 'top'].forEach(function (k) { sun.shadow.camera[k] = 300; });
+  sun.shadow.camera.far = 1400; sun.shadow.bias = -0.0005;
+  scene.add(sun); scene.add(sun.target);
+  var fill = new THREE.DirectionalLight(0xdfe8ff, 0.25); fill.position.set(-300, 150, -200); scene.add(fill);
+
+  var shadowMat = new THREE.ShadowMaterial({ opacity: 0.18 });
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), shadowMat);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  var grid = null;
+  function token(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+  function applyTheme() {
+    scene.background = new THREE.Color(token('--stage') || '#e3e8ee');
+    if (grid) scene.remove(grid);
+    grid = new THREE.GridHelper(3600, 120, new THREE.Color(token('--grid-a') || '#b9c2cd'), new THREE.Color(token('--grid-b') || '#d0d7df'));
+    grid.position.y = 0.05; scene.add(grid);
+    shadowMat.opacity = new THREE.Color(token('--stage')).getHSL({}).l < 0.3 ? 0.35 : 0.18;
+  }
+  applyTheme();
+  try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme); } catch (e) {}
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // ---------- materials ----------
+  function mat(c, o) { return new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: 0.7, metalness: 0.05 }, o || {})); }
+  var M = {
+    shell: mat(0xe9e4d9), red: mat(0xc23b2e, { roughness: 0.55 }), grey: mat(0x8d949d, { roughness: 0.45, metalness: 0.35 }),
+    dark: mat(0x35383d, { roughness: 0.5, metalness: 0.4 }), rubber: mat(0x1d1f22, { roughness: 0.9 }),
+    lens: mat(0x2e74e0, { emissive: 0x1d55c4, emissiveIntensity: 0.6, roughness: 0.12 }), lamp: mat(0xf4efe2, { emissive: 0xfff1cf, emissiveIntensity: 0.35 }),
+    horn: mat(0xf5f5f5, { roughness: 0.4 }), batt: mat(0x2b5fb3, { roughness: 0.4 })
+  };
+  var shellMats = [M.shell, M.red, M.grey];
+  function add(parent, geo, m, x, y, z) {
+    var me = new THREE.Mesh(geo, m); me.position.set(x || 0, y || 0, z || 0);
+    me.castShadow = true; me.receiveShadow = true; parent.add(me); return me;
+  }
+  function box(p, w, h, d, m, x, y, z) { return add(p, new THREE.BoxGeometry(w, h, d), m, x, y, z); }
+  function cyl(p, r, len, m, axis, x, y, z) {
+    var me = add(p, new THREE.CylinderGeometry(r, r, len, 28), m, x, y, z);
+    if (axis === 'x') me.rotation.z = Math.PI / 2; if (axis === 'z') me.rotation.x = Math.PI / 2; return me;
+  }
+  var servoMeshes = [];
+  function servo(p, w, h, d, x, y, z, ch) {
+    var m = mat(0xe08a2e, { roughness: 0.5, emissive: 0xff7a00, emissiveIntensity: 0 });
+    var me = box(p, w, h, d, m, x, y, z); servoMeshes[ch] = me; return me;
+  }
+
+  // ---------- mass markers ----------
+  var masses = [];
+  function mass(p, g, x, y, z) { var o = new THREE.Object3D(); o.position.set(x, y, z); p.add(o); masses.push({ o: o, m: g }); }
+
+  // ---------- body (pelvis frame: origin between hip axes) ----------
+  var root = new THREE.Group(); scene.add(root);
+  box(root, 36, 50, 70, M.shell, 0, 0, 0);
+  box(root, 36, 2.4, 70, M.shell, 0, 26.2, 0);
+  box(root, 30, 6, 1.2, M.red, 0, 14, 35.6);
+  box(root, 20, 14, 1.2, M.grey, 0, -6, 35.6);
+  box(root, 36, 5, 1.2, M.red, 0, -18, -35.6);
+  [-1, 1].forEach(function (s) { cyl(root, 12, 6.5, M.shell, 'x', s * 21.25, 0, 0); cyl(root, 3.6, 2, M.horn, 'x', s * 25.5, 0, 0); });
+  box(root, 28, 3, 52, M.grey, 0, 28.9, -5.5);
+  box(root, 20, 18, 36, M.shell, 0, 39.4, -5.5);
+  servo(root, 12.2, 22.7, 22.8, 0, 44.05, -5.5, 8);
+  mass(root, 18, 0, 0, 0); mass(root, 5, 0, 26, 0); mass(root, 9, -11, 7, 0); mass(root, 15, 0, -14.5, 0);
+  mass(root, 3, 0, 15, 31); mass(root, 10, 0, 0, 0); mass(root, 6, 0, 37.5, -5.5); mass(root, 13.4, 0, 44, -5.5);
+
+  // neck yaw (ch 8) and head pitch (ch 9)
+  var yaw = new THREE.Group(); yaw.position.set(0, 48.4, 0); root.add(yaw);
+  cyl(yaw, 3.6, 2, M.horn, 'y', 0, 16.3, 0);
+  box(yaw, 46, 3, 26, M.dark, 0, 18.8, 0);
+  box(yaw, 3, 23, 14, M.dark, -20, 31.8, 0); box(yaw, 3, 23, 14, M.dark, 20, 31.8, 0);
+  mass(yaw, 3, 0, 22, 0);
+  var pitch = new THREE.Group(); pitch.position.set(0, 36.3, 0); yaw.add(pitch);
+  servo(pitch, 31, 12.2, 22.8, 2, 0, -5.5, 9);
+  cyl(pitch, 3.6, 2, M.horn, 'x', 18.5, 0, 0);
+  var headShell = box(pitch, 72, 45, 104, M.shell, 0, 10.5, 0);
+  box(pitch, 72, 18, 104, M.shell, 0, 42, 0);
+  box(pitch, 60, 6, 8, M.shell, 0, 48, 56);
+  box(pitch, 52, 1.2, 62, M.grey, 0, 51.6, 4);
+  box(pitch, 72, 4, 1.2, M.red, 0, -6, 52.6);
+  var lens = add(pitch, new THREE.SphereGeometry(10, 28, 14), M.lens, 14, 12, 52.5); lens.scale.z = 0.5;
+  cyl(pitch, 12.5, 4, M.dark, 'z', 14, 12, 52.5);
+  cyl(pitch, 9, 6, M.grey, 'z', -18, 12, 54); cyl(pitch, 6, 2, M.lamp, 'z', -18, 12, 57.5);
+  [-1, 1].forEach(function (s) {
+    box(pitch, 1.2, 4, 90, M.red, s * 36.6, 22, 0);
+    cyl(pitch, 17, 4, M.shell, 'x', s * 38, 12, -20);
+    var t1 = add(pitch, new THREE.TorusGeometry(13, 1.4, 10, 36), M.red, s * 40.1, 12, -20); t1.rotation.y = Math.PI / 2;
+    var t2 = add(pitch, new THREE.TorusGeometry(9.5, 1.1, 10, 36), M.red, s * 40.1, 12, -20); t2.rotation.y = Math.PI / 2;
+  });
+  var antennas = [];
+  [-1, 1].forEach(function (s) {
+    var g = new THREE.Group(); g.position.set(s * 22, 51, -32); pitch.add(g);
+    cyl(g, 3, 6, M.dark, 'y', 0, 3, 0); cyl(g, 1, 46, M.grey, 'y', 0, 29, 0); cyl(g, 2.5, 9, M.rubber, 'y', 0, 54, 0);
+    g.rotation.z = s * 0.12; g.rotation.x = -0.15; g.userData.s = s; antennas.push(g);
+  });
+  var battery = box(pitch, 40, 21, 77, M.batt, 0, 20.5, 0); battery.visible = false;
+  mass(pitch, 25, 0, 10.5, 0); mass(pitch, 13, 0, 42, 0); mass(pitch, 103, 0, 20.5, 0); mass(pitch, 10, 0, 38, -24);
+  mass(pitch, 5, -32, 1, -7); mass(pitch, 3, 18, -7, -41); mass(pitch, 4, 0, 12, -20); mass(pitch, 2, 0, 12, 52); mass(pitch, 13.4, 2, 0, -5.5);
+
+  // ---------- legs ----------
+  var L1 = 40, L2 = 40;
+  var legs = {};
+  [['L', 1, 0], ['R', -1, 4]].forEach(function (cfg) {
+    var side = cfg[0], s = cfg[1], c0 = cfg[2];
+    var hip = new THREE.Group(); hip.position.set(s * 42, 0, 0); root.add(hip);
+    box(hip, 21.7, 36.2, 16.2, M.shell, s * 6.65, 5.5, 0);
+    box(hip, 8.9, 8, 16.2, M.shell, s * 0.25, -14, 0);
+    box(hip, 22.2, 31.5, 16.2, M.shell, s * -6.4, -32.15, 0);
+    box(hip, 1.2, 24, 9, M.red, s * 17.6, 6, 2);
+    servo(hip, 31, 22.8, 12.2, 0, 5.5, 0, c0);
+    servo(hip, 31, 22.8, 12.2, 0, -34.5, 0, c0 + 1);
+    mass(hip, 9, 0, -15, 0); mass(hip, 13.4, 0, 5.5, 0); mass(hip, 13.4, 0, -34.5, 0);
+    var knee = new THREE.Group(); knee.position.set(0, -40, 0); hip.add(knee);
+    cyl(knee, 3.6, 2, M.horn, 'x', s * 16.5, 0, 0);
+    box(knee, 3, 25, 14, M.shell, s * -19, -5.5, 0); box(knee, 3, 25, 14, M.shell, s * 19, -5.5, 0);
+    box(knee, 41, 2, 14, M.shell, 0, -19, 0);
+    box(knee, 22.2, 29.9, 16.2, M.shell, s * -6.4, -32.95, 0);
+    box(knee, 10, 18, 1.2, M.red, s * -6, -30, 8.7);
+    servo(knee, 31, 22.8, 12.2, 0, -34.5, 0, c0 + 2);
+    mass(knee, 9, 0, -25, 0); mass(knee, 13.4, 0, -34.5, 0);
+    var ank = new THREE.Group(); ank.position.set(0, -40, 0); knee.add(ank);
+    cyl(ank, 3.6, 2, M.horn, 'x', s * 16.5, 0, 0);
+    box(ank, 3, 16.9, 14, M.dark, s * -19, -1.45, 0); box(ank, 3, 16.9, 14, M.dark, s * 19, -1.45, 0);
+    box(ank, 42.5, 3, 32, M.dark, s * 0.75, -11.4, 0);
+    servo(ank, 22.8, 12.2, 31, s * 5.5, -19, 0, c0 + 3);
+    mass(ank, 5, 0, -6, 0); mass(ank, 13.4, s * 5.5, -19, 0);
+    var roll = new THREE.Group(); roll.position.set(0, -19, 0); ank.add(roll);
+    cyl(roll, 3.6, 2, M.horn, 'z', 0, 0, 16.5);
+    box(roll, 24, 3, 26, M.dark, 0, -14.5, -1);
+    box(roll, 20, 3, 16, M.dark, 0, -14.5, -16);
+    box(roll, 10, 3, 46, M.dark, 0, -14.5, 15);
+    [-1, 1].forEach(function (t) { var tt = box(roll, 8, 3, 30, M.dark, t * 12.3, -14.5, 19.6); tt.rotation.y = t * 25 * D2R; });
+    box(roll, 16, 16, 3, M.dark, 0, -5, -22); box(roll, 16, 16, 3, M.dark, 0, -5, 19);
+    box(roll, 40, 1, 60, M.rubber, 0, -15.6, 7).visible = false;
+    mass(roll, 8, 0, -14.5, 7);
+    var sole = new THREE.Object3D(); sole.position.set(0, -16, 0); roll.add(sole);
+    var outline = [[-10, -24], [10, -24], [12, -14], [19, 33], [5, 38], [-5, 38], [-19, 33], [-12, -14]].map(function (p) { return new THREE.Vector3(p[0], -16, p[1]); });
+    legs[side] = { s: s, hip: hip, knee: knee, ank: ank, roll: roll, sole: sole, outline: outline };
+  });
+
+  var MTOT = masses.reduce(function (a, b) { return a + b.m; }, 0);
+
+  // ---------- channels ----------
+  var CH = [
+    { n: 'Левое бедро', j: legs.L.hip, ax: 'x', leg: 'L' }, { n: 'Левое колено', j: legs.L.knee, ax: 'x', leg: 'L' },
+    { n: 'Левый голеностоп', j: legs.L.ank, ax: 'x', leg: 'L' }, { n: 'Наклон левой стопы', j: legs.L.roll, ax: 'z', leg: 'L' },
+    { n: 'Правое бедро', j: legs.R.hip, ax: 'x', leg: 'R' }, { n: 'Правое колено', j: legs.R.knee, ax: 'x', leg: 'R' },
+    { n: 'Правый голеностоп', j: legs.R.ank, ax: 'x', leg: 'R' }, { n: 'Наклон правой стопы', j: legs.R.roll, ax: 'z', leg: 'R' },
+    { n: 'Поворот шеи', j: yaw, ax: 'y' }, { n: 'Наклон головы', j: pitch, ax: 'x' }
+  ];
+  CH.forEach(function (c) {
+    c.distal = [];
+    var set = new Set(); c.j.traverse(function (o) { set.add(o); });
+    masses.forEach(function (m, i) { if (set.has(m.o)) c.distal.push(i); });
+  });
+
+  // axis helpers
+  var axisMat = new THREE.MeshBasicMaterial({ color: 0xff3b30, depthTest: false, transparent: true, opacity: 0.85 });
+  var axisMeshes = CH.map(function (c) {
+    var g = new THREE.CylinderGeometry(0.7, 0.7, c.ax === 'y' ? 40 : 56, 8);
+    var me = new THREE.Mesh(g, axisMat); me.renderOrder = 10;
+    if (c.ax === 'x') me.rotation.z = Math.PI / 2; if (c.ax === 'z') me.rotation.x = Math.PI / 2;
+    c.j.add(me); return me;
+  });
+
+  // ---------- IK ----------
+  function legIK(dz, dy) {
+    var d = Math.min(Math.hypot(dy, dz), L1 + L2 - 0.2);
+    var beta = Math.atan2(-dz, -dy);
+    var g = Math.acos(Math.max(-1, Math.min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d))));
+    var th = beta - g;
+    var ky = -L1 * Math.cos(th), kz = -L1 * Math.sin(th);
+    var ay = dy, az = dz;
+    var phs = Math.atan2(-(az - kz), -(ay - ky));
+    return [th, phs - th, -phs];
+  }
+  var DY = -69.3;
+  var QS = legIK(0, DY);
+  var qStand = [QS[0], QS[1], QS[2], 0, QS[0], QS[1], QS[2], 0, 0, 0];
+  var q = qStand.slice();
+
+  // ---------- gait ----------
+  var T = 4.0, S = 30, PHI = 19 * D2R, LIFT = 8;
+  var B = [0, 0.12, 0.38, 0.5, 0.62, 0.88, 1];
+  function sm(u) { return u * u * (3 - 2 * u); }
+  function gait(t) {
+    var i = 0; while (t >= B[i + 1]) i++;
+    var u = (t - B[i]) / (B[i + 1] - B[i]);
+    var phi = 0, zL = 0, zR = 0, lL = 0, lR = 0, stance = i < 3 ? 'R' : 'L';
+    if (i === 0) { phi = -PHI * sm(u); zL = -S / 2; zR = S / 2; }
+    else if (i === 1) { phi = -PHI; zL = -S / 2 + S * sm(u); zR = S / 2 - S * u; lL = LIFT * Math.sin(Math.PI * u); }
+    else if (i === 2) { phi = -PHI * (1 - sm(u)); zL = S / 2; zR = -S / 2; }
+    else if (i === 3) { phi = PHI * sm(u); zL = S / 2; zR = -S / 2; }
+    else if (i === 4) { phi = PHI; zL = S / 2 - S * u; zR = -S / 2 + S * sm(u); lR = LIFT * Math.sin(Math.PI * u); }
+    else { phi = PHI * (1 - sm(u)); zL = -S / 2; zR = S / 2; }
+    return { i: i, phi: phi, zL: zL, zR: zR, lL: lL, lR: lR, stance: stance };
+  }
+
+  // ---------- world anchoring ----------
+  var W = { L: new THREE.Matrix4(), R: new THREE.Matrix4() };
+  var stance = 'L';
+  var tmpM = new THREE.Matrix4(), tmpV = new THREE.Vector3(), tmpS = new THREE.Vector3();
+  function applyQ() {
+    for (var k = 0; k < 10; k++) {
+      var c = CH[k];
+      c.j.rotation.set(0, 0, 0);
+      c.j.rotation[c.ax] = q[k];
+    }
+  }
+  function fkIdentity() { root.position.set(0, 0, 0); root.quaternion.identity(); root.updateMatrixWorld(true); }
+  function anchor(side) {
+    legs[side].sole.getWorldPosition(tmpV);
+    W[side].makeTranslation(tmpV.x, 0, tmpV.z); stance = side;
+  }
+  function place() {
+    fkIdentity();
+    tmpM.copy(legs[stance].sole.matrixWorld).invert();
+    var Bm = W[stance].clone().multiply(tmpM);
+    Bm.decompose(root.position, root.quaternion, tmpS);
+    root.updateMatrixWorld(true);
+  }
+  applyQ(); fkIdentity(); anchor('R'); anchor('L');
+
+  // ---------- CoM, support, loads ----------
+  var comDot = new THREE.Mesh(new THREE.SphereGeometry(4.5, 16, 10), new THREE.MeshBasicMaterial({ color: 0xd6402f, depthTest: false }));
+  comDot.renderOrder = 11; scene.add(comDot);
+  var comBall = new THREE.Mesh(new THREE.SphereGeometry(5, 16, 10), new THREE.MeshBasicMaterial({ color: 0xd6402f, depthTest: false, transparent: true, opacity: 0.85 }));
+  comBall.renderOrder = 11; scene.add(comBall);
+  var comLineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  var comLine = new THREE.Line(comLineGeo, new THREE.LineBasicMaterial({ color: 0xd6402f, depthTest: false })); comLine.renderOrder = 11; scene.add(comLine);
+  var supMat = new THREE.MeshBasicMaterial({ color: 0x2f9e5b, transparent: true, opacity: 0.25, depthWrite: false, side: THREE.DoubleSide });
+  var supMesh = new THREE.Mesh(new THREE.BufferGeometry(), supMat); supMesh.renderOrder = 5; scene.add(supMesh);
+  var supLine = new THREE.LineLoop(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x2f9e5b })); scene.add(supLine);
+
+  function hull(pts) {
+    pts = pts.slice().sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; });
+    function cr(o, a, b) { return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]); }
+    var lo = [], up = [];
+    pts.forEach(function (p) { while (lo.length >= 2 && cr(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); });
+    for (var i = pts.length - 1; i >= 0; i--) { var p = pts[i]; while (up.length >= 2 && cr(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    up.pop(); lo.pop(); return lo.concat(up);
+  }
+  function margin(poly, p) {
+    var best = Infinity;
+    for (var i = 0; i < poly.length; i++) {
+      var a = poly[i], b = poly[(i + 1) % poly.length];
+      var ex = b[0] - a[0], ez = b[1] - a[1], len = Math.hypot(ex, ez);
+      var d = (ex * (p[1] - a[1]) - ez * (p[0] - a[0])) / len;
+      if (d < best) best = d;
+    }
+    return best;
+  }
+
+  var load = new Array(10).fill(0), peak = new Array(10).fill(0);
+  var com = new THREE.Vector3(), mpos = masses.map(function () { return new THREE.Vector3(); });
+  var info = { contact: '', margin: 0, h: 0, tilt: 0 };
+  function physics(dt) {
+    com.set(0, 0, 0);
+    masses.forEach(function (m, i) { m.o.getWorldPosition(mpos[i]); com.addScaledVector(mpos[i], m.m); });
+    com.multiplyScalar(1 / MTOT);
+    // contacts
+    var cs = {};
+    ['L', 'R'].forEach(function (k) { legs[k].sole.getWorldPosition(tmpV); cs[k] = { y: tmpV.y, p: tmpV.clone() }; });
+    var onL = cs.L.y < 0.8, onR = cs.R.y < 0.8;
+    if (!onL && !onR) { if (cs.L.y < cs.R.y) onL = true; else onR = true; }
+    var edge = false;
+    if (onL !== onR) {
+      var st = onL ? 'L' : 'R', ot = onL ? 'R' : 'L', sp = [];
+      legs[st].outline.forEach(function (v) { tmpV.copy(v); legs[st].roll.localToWorld(tmpV); sp.push([tmpV.x, tmpV.z]); });
+      if (margin(hull(sp), [com.x, com.z]) < 0 && cs[ot].y < 30) { edge = true; if (ot === 'L') onL = true; else onR = true; }
+    }
+    var f = { L: 0, R: 0 };
+    if (onL && onR) {
+      var dx = cs.L.p.x - cs.R.p.x, w = Math.abs(dx) > 1 ? (com.x - cs.R.p.x) / dx : 0.5;
+      w = Math.max(0, Math.min(1, w)); f.L = w; f.R = 1 - w;
+    } else if (onL) f.L = 1; else f.R = 1;
+    // support polygon
+    var pts = [];
+    ['L', 'R'].forEach(function (k) {
+      if ((k === 'L' && !onL) || (k === 'R' && !onR)) return;
+      legs[k].outline.forEach(function (v) { tmpV.copy(v); legs[k].roll.localToWorld(tmpV); pts.push([tmpV.x, tmpV.z]); });
+    });
+    var poly = hull(pts);
+    info.margin = margin(poly, [com.x, com.z]);
+    info.contact = edge ? (cs.L.y < cs.R.y ? 'левая + край правой' : 'правая + край левой') : onL && onR ? 'обе стопы' : onL ? 'левая стопа' : 'правая стопа';
+    var single = !(onL && onR);
+    info.h = com.y;
+    var up = new THREE.Vector3(0, 1, 0).applyQuaternion(root.quaternion);
+    info.tilt = Math.asin(Math.max(-1, Math.min(1, -up.x))) / D2R;
+    // draw support
+    var flat = []; poly.forEach(function (p) { flat.push(new THREE.Vector3(p[0], 0.6, p[1])); });
+    supLine.geometry.dispose(); supLine.geometry = new THREE.BufferGeometry().setFromPoints(flat);
+    var shape = new THREE.Shape(poly.map(function (p) { return new THREE.Vector2(p[0], -p[1]); }));
+    supMesh.geometry.dispose(); supMesh.geometry = new THREE.ShapeGeometry(shape); supMesh.rotation.x = -Math.PI / 2; supMesh.position.y = 0.4;
+    var inside = info.margin > 0;
+    var col = inside ? 0x2f9e5b : 0xd6402f;
+    supMat.color.setHex(col); supLine.material.color.setHex(col);
+    comDot.material.color.setHex(col); comBall.material.color.setHex(col); comLine.material.color.setHex(col);
+    comDot.position.set(com.x, 0.8, com.z); comBall.position.copy(com);
+    comLineGeo.setFromPoints([com.clone(), new THREE.Vector3(com.x, 0.8, com.z)]);
+    // loads
+    var o = new THREE.Vector3(), u = new THREE.Vector3(), sum = new THREE.Vector3(), r = new THREE.Vector3(), Fv = new THREE.Vector3();
+    CH.forEach(function (c, k) {
+      c.j.getWorldPosition(o);
+      u.set(c.ax === 'x' ? 1 : 0, c.ax === 'y' ? 1 : 0, c.ax === 'z' ? 1 : 0);
+      c.j.getWorldQuaternion(tmpQ); u.applyQuaternion(tmpQ);
+      sum.set(0, 0, 0);
+      c.distal.forEach(function (i) { r.subVectors(mpos[i], o); Fv.set(0, -masses[i].m, 0); sum.add(r.cross(Fv)); });
+      if (c.leg && f[c.leg] > 0) {
+        if (single) r.set(com.x - o.x, -o.y, com.z - o.z); else r.subVectors(cs[c.leg].p, o);
+        Fv.set(0, f[c.leg] * MTOT, 0); sum.add(r.cross(Fv));
+      }
+      var tau = Math.abs(u.dot(sum)) / 10000;
+      load[k] = tau;
+      peak[k] = Math.max(tau, peak[k] - dt * 0.12);
+    });
+  }
+  var tmpQ = new THREE.Quaternion();
+
+  // ---------- UI ----------
+  var chans = document.getElementById('chans');
+  chans.innerHTML = CH.map(function (c, k) {
+    return '<div class="ch" data-ch="' + k + '"><span class="n">' + k + '</span><span class="nm">' + c.n + '</span><span class="ang" id="a' + k + '">90°</span>' +
+      '<input type="range" id="s' + k + '" min="0" max="180" step="1" value="90" aria-label="Угол канала ' + k + ', ' + c.n + '" disabled>' +
+      '<div class="load"><div class="bar" id="b' + k + '"></div><div class="pk" id="p' + k + '"></div><div class="lim"></div><span id="l' + k + '">0,0</span></div></div>';
+  }).join('');
+  var rows = Array.prototype.slice.call(chans.querySelectorAll('.ch'));
+  var sliders = CH.map(function (c, k) { return document.getElementById('s' + k); });
+  var hl = -1;
+  function setHL(k) {
+    hl = k;
+    servoMeshes.forEach(function (m, i) { if (m) m.material.emissiveIntensity = i === k ? 0.9 : 0; });
+    rows.forEach(function (r, i) { r.classList.toggle('hl', i === k); });
+  }
+  rows.forEach(function (r, k) {
+    r.addEventListener('mouseenter', function () { setHL(k); });
+    r.addEventListener('mouseleave', function () { setHL(-1); });
+    sliders[k].addEventListener('focus', function () { setHL(k); });
+    sliders[k].addEventListener('blur', function () { setHL(-1); });
+    sliders[k].addEventListener('input', function () { manualQ[k] = qStand[k] + (sliders[k].value - 90) * D2R; });
+  });
+  var manualQ = qStand.slice();
+
+  var mode = reduced ? 'stand' : 'walk';
+  function setMode(m) {
+    if (m === 'manual') { for (var k = 0; k < 10; k++) { manualQ[k] = q[k]; sliders[k].value = Math.round(90 + (q[k] - qStand[k]) / D2R); } }
+    mode = m;
+    document.querySelectorAll('[data-mode]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === m)); });
+    sliders.forEach(function (s) { s.disabled = m !== 'manual'; });
+  }
+  setMode(mode);
+  document.querySelectorAll('[data-mode]').forEach(function (b) { b.addEventListener('click', function () { setMode(b.dataset.mode); }); });
+
+  var speed = 1, speedEl = document.getElementById('speed'), speedV = document.getElementById('speedv');
+  speedEl.addEventListener('input', function () { speed = +speedEl.value; speedV.textContent = speed.toFixed(1).replace('.', ',') + '×'; });
+
+  function toggle(id, fn) {
+    var b = document.getElementById(id);
+    b.addEventListener('click', function () { var on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); fn(on); });
+  }
+  toggle('t-shell', function (on) {
+    shellMats.forEach(function (m) { m.transparent = on; m.opacity = on ? 0.22 : 1; m.depthWrite = !on; m.needsUpdate = true; });
+    battery.visible = on;
+  });
+  toggle('t-axes', function (on) { axisMeshes.forEach(function (m) { m.visible = on; }); });
+  var showCom = true;
+  toggle('t-com', function (on) { showCom = on; [comDot, comBall, comLine, supMesh, supLine].forEach(function (o) { o.visible = on; }); });
+
+  var audio = null, beepUntil = -1;
+  document.getElementById('beep').addEventListener('click', function () {
+    beepUntil = time + 0.9;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      var t0 = audio.currentTime + 0.02;
+      for (var i = 0; i < 4; i++) {
+        var o = audio.createOscillator(), g = audio.createGain(), st = t0 + i * 0.11;
+        o.frequency.setValueAtTime(1200 + Math.random() * 1500, st);
+        o.frequency.exponentialRampToValueAtTime(900 + Math.random() * 2200, st + 0.08);
+        g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(0.09, st + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.09);
+        o.connect(g); g.connect(audio.destination); o.start(st); o.stop(st + 0.1);
+      }
+    } catch (e) {}
+  });
+
+  function resize() {
+    var r = stage.getBoundingClientRect();
+    renderer.setSize(Math.max(1, r.width), Math.max(1, r.height), false);
+    camera.aspect = r.width / Math.max(1, r.height); camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  var phaseEls = Array.prototype.slice.call(document.querySelectorAll('#phases div'));
+  var el = function (id) { return document.getElementById(id); };
+  function fmt(x, d) { return x.toFixed(d).replace('.', ','); }
+
+  // ---------- loop ----------
+  var clock = new THREE.Clock(), time = 0, gt = 0, walkW = 0, lookW = 0, uiT = 0, lastPos = new THREE.Vector3();
+  place(); lastPos.copy(root.position);
+  function frame() {
+    requestAnimationFrame(frame);
+    step(Math.min(clock.getDelta(), 0.05), true);
+  }
+  function step(dt, draw) {
+    time += dt;
+    var k = 1 - Math.exp(-dt * 2.5);
+    walkW += ((mode === 'walk' ? 1 : 0) - walkW) * k;
+    lookW += ((mode === 'look' ? 1 : 0) - lookW) * k;
+    gt += dt * speed * walkW;
+    var t = (gt / T) % 1;
+    var G = gait(t);
+    var phaseIdx = -1;
+
+    if (mode === 'manual') {
+      for (var i = 0; i < 10; i++) q[i] += (manualQ[i] - q[i]) * (1 - Math.exp(-dt * 10));
+      var want = q[3] < -0.01 || q[7] < -0.01 ? 'R' : 'L';
+      if (want !== stance) anchor(want);
+    } else {
+      var w = walkW;
+      var breathe = reduced ? 0 : (1 - w) * 1.5 * Math.sin(time * 1.6);
+      var qL = legIK(G.zL * w, DY + G.lL * w + breathe), qR = legIK(G.zR * w, DY + G.lR * w + breathe);
+      q[0] = qL[0]; q[1] = qL[1]; q[2] = qL[2]; q[4] = qR[0]; q[5] = qR[1]; q[6] = qR[2];
+      q[3] = G.phi * w; q[7] = G.phi * w;
+      var beep = time < beepUntil ? Math.sin((beepUntil - time) * 18) * 0.12 : 0;
+      q[8] = lookW * (1.0 * Math.sin(time * 0.7) + 0.15 * Math.sin(time * 2.1)) + w * 0.18 * Math.sin(2 * Math.PI * t) + (reduced ? 0 : (1 - w) * (1 - lookW) * 0.1 * Math.sin(time * 0.45));
+      q[9] = lookW * 0.22 * Math.sin(time * 1.2) + beep;
+      if (w > 0.02) phaseIdx = G.i;
+    }
+    applyQ();
+    place();
+    if (mode !== 'manual' && walkW > 0.02 && G.stance !== stance && Math.abs(G.phi) < 0.02) anchor(G.stance);
+
+    antennas.forEach(function (a) { var s = a.userData.s; a.rotation.z = s * 0.12 + (reduced ? 0 : 0.03 + lookW * 0.1) * Math.sin(time * 6 + s); });
+    M.lens.emissiveIntensity = 0.55 + (reduced ? 0 : 0.2 * Math.sin(time * 2.2)) + (time < beepUntil ? 0.6 : 0);
+
+    // wrap far walks back near origin
+    if (root.position.z > 360) {
+      ['L', 'R'].forEach(function (s) { W[s].elements[14] -= 360; });
+      place(); camera.position.z -= 360; controls.target.z -= 360; lastPos.z -= 360;
+    }
+    tmpV.subVectors(root.position, lastPos); tmpV.y = 0;
+    camera.position.add(tmpV); controls.target.add(tmpV); lastPos.copy(root.position);
+    sun.position.set(root.position.x + 220, 460, root.position.z + 260); sun.target.position.set(root.position.x, 0, root.position.z);
+
+    physics(dt);
+    if (!draw) return;
+    controls.update();
+    renderer.render(scene, camera);
+
+    uiT -= dt;
+    if (uiT <= 0) {
+      uiT = 0.1;
+      for (var c = 0; c < 10; c++) {
+        var ang = 90 + (q[c] - qStand[c]) / D2R;
+        el('a' + c).textContent = Math.round(ang) + '°';
+        if (mode !== 'manual') sliders[c].value = Math.round(ang);
+        var v = load[c], pct = Math.min(v / 2.4, 1) * 100;
+        var bar = el('b' + c); bar.style.width = pct + '%';
+        bar.style.background = v >= 1.8 ? 'var(--bad)' : v >= 1.2 ? 'var(--warn)' : 'var(--good)';
+        el('p' + c).style.left = Math.min(peak[c] / 2.4, 1) * 100 + '%';
+        el('l' + c).textContent = fmt(v, 2);
+      }
+      phaseEls.forEach(function (p, i) { p.classList.toggle('on', i === phaseIdx); });
+      el('v-sup').textContent = info.contact;
+      var ok = info.margin > 0;
+      var vc = el('v-com'); vc.textContent = ok ? 'внутри опоры' : 'вне опоры — упадёт'; vc.className = 'state ' + (ok ? 'ok' : 'bad');
+      el('v-margin').textContent = fmt(info.margin, 0) + ' мм';
+      el('v-h').textContent = fmt(info.h, 0) + ' мм';
+      el('v-m').textContent = fmt(MTOT, 0) + ' г';
+      el('v-tilt').textContent = fmt(info.tilt, 1) + '°';
+      var mk = 0; for (var z = 1; z < 10; z++) if (peak[z] > peak[mk]) mk = z;
+      el('verdict').textContent = 'Самый нагруженный сейчас: канал ' + mk + ' (' + CH[mk].n.toLowerCase() + '), пик ' + fmt(peak[mk], 2) + ' кг·см — это ' + Math.round(peak[mk] / 2 * 100) + '% от предела MG90S при 4,8 В.';
+      el('hudr').textContent = mode === 'walk' ? 'ходьба ≈ ' + fmt(2 * S / T / 10 * speed, 1) + ' см/с' : '';
+    }
+  }
+  var pre = /^#t(\d+)$/.exec(location.hash);
+  if (pre) { for (var n = Math.round(+pre[1] / 1000 * 60); n > 0; n--) step(1 / 60, false); }
+  frame();
+})();
+</script>
