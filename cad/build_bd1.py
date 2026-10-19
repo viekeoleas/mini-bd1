@@ -30,6 +30,31 @@ def C(t, *tools):
         assert tbm.booleanOperation(t, x, DIFF), 'cut failed'
     return t
 
+# single-arm MG90S horn pocket, sized on the T01 test plate (pocket #4 fitted; hub opened a bit more):
+# hub r4.5, arm 6.8 wide at the hub centre tapering toward a r2.4 tip 17.7 from the centre, the taper as
+# stepped boxes that always enclose it. Horns are trimmed to 12.5 mm from the hub centre (the foot fork has
+# only 13 mm before its plate), so every pocket stops square at HORN_CAP and never cuts into a fork's root.
+HORN_R, HORN_W0, HORN_RT, HORN_L, HORN_N, HORN_CAP = 4.5, 6.8, 2.4, 17.7, 8, 12.8
+def horn_pocket(b, axis, a0, a1, c, arm, sign):
+    # axis: pocket normal, a0..a1 its depth range; c: centre as {'x':..,'y':..,'z':..} for the other two axes;
+    # arm: axis the arm runs along, sign: its direction
+    side = [k for k in 'xyz' if k not in (axis, arm)][0]
+    lt = HORN_L - HORN_RT
+    def at(d):  # the two cross-axis coordinates of a point d along the arm, in cyl() order
+        p = dict(c); p[arm] = c[arm] + sign * d
+        return [p[k] for k in 'xyz' if k != axis]
+    o0 = at(0)
+    C(b, cyl(axis, o0[0], o0[1], HORN_R, a0, a1))
+    for j in range(HORN_N):
+        s0, s1 = lt * j / HORN_N, min(lt * (j + 1) / HORN_N, HORN_CAP)
+        if s0 >= HORN_CAP:
+            break
+        w = HORN_W0 + (2 * HORN_RT - HORN_W0) * j / HORN_N
+        lo = {axis: a0, arm: c[arm] + sign * s0, side: c[side] - w / 2}
+        hi = {axis: a1, arm: c[arm] + sign * s1, side: c[side] + w / 2}
+        C(b, box(lo['x'], hi['x'], lo['y'], hi['y'], lo['z'], hi['z']))
+    return b
+
 # ---------- 4x4 math (mm) ----------
 def T(x, y, z): return [[1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1]]
 def Rx(d):
@@ -65,9 +90,8 @@ def pelvis():
     for s in (1, -1):
         U(b, cyl('x', 0, 0, 12, s * 18, s * 24.5))
         C(b, cyl('x', 0, 0, 2.5, s * 15, s * 25),
-          cyl('x', 0, 0, 3.7, s * 22.5, s * 24.6),
-          box(*X(s, 22.5, 24.6), 0, 17, -2.3, 2.3),
           box(*X(s, 15.5, 18.5), 13, 21, -30, -18))
+        horn_pocket(b, 'x', *X(s, 22.5, 24.6), {'y': 0, 'z': 0}, 'y', 1)
     for (y, z) in ((-2.8, 27.95), (-2.8, -27.95), (16.2, 27.95), (16.2, -27.95)):
         U(b, cyl('x', y, z, 2.6, -16.1, -12))
         C(b, cyl('x', y, z, 0.9, -17, -11.9))
@@ -84,7 +108,7 @@ def pelvis_lid():
     b = box(-18, 18, 25, 27.4, -35, 35)
     for z in (20, -20):
         C(b, cyl('y', 13, z, 1.2, 24.9, 27.5), cyl('y', -14.25, z, 1.2, 24.9, 27.5))
-    C(b, cyl('y', 0, -27.5, 1.7, 24.9, 27.5), cyl('y', 0, 16.5, 1.7, 24.9, 27.5), box(-4, 4, 24.9, 27.5, -11.5, 0.5))
+    C(b, cyl('y', 0, -27.5, 1.7, 24.9, 27.5), cyl('y', 0, 16.5, 1.7, 24.9, 27.5), box(-5, 5, 24.9, 27.5, -11.5, 10))
     return b
 
 def neck():
@@ -93,6 +117,8 @@ def neck():
     C(b, box(-6.3, 6.3, 32.7, 48.5, -17.1, 6.1), box(-3, 3, 27.3, 32.8, -15, 4),
       cyl('y', 0, -19.4, 0.9, 40.4, 48.5), cyl('y', 0, 8.4, 0.9, 40.4, 48.5),
       cyl('y', 0, -27.5, 1.7, 27.3, 30.5), cyl('y', 0, 16.5, 1.7, 27.3, 30.5))
+    # cable: MG90S wire leaves the shaft end at the bottom -> plug-size slot down through the floor and base
+    C(b, box(-4.75, 4.75, 27.3, 38.7, 3.9, 9.4))
     return b
 
 def yoke():
@@ -100,8 +126,10 @@ def yoke():
     for s in (1, -1):
         U(b, box(*X(s, 18.5, 21.5), 3, 19, -7, 7), cyl('x', 19, 0, 7, s * 18.5, s * 21.5))
     C(b, cyl('x', 19, 0, 1.7, -22, -18))
-    C(b, cyl('x', 19, 0, 3.7, 18.4, 20.3), box(18.4, 20.3, 4, 19, -2.3, 2.3), cyl('x', 19, 0, 2.5, 18, 22))
-    C(b, cyl('y', 0, 0, 3.7, -0.1, 1.8), box(0, 17, -0.1, 1.8, -2.3, 2.3), cyl('y', 0, 0, 2.5, -0.1, 3.1))
+    horn_pocket(b, 'x', 18.4, 20.3, {'y': 19, 'z': 0}, 'y', -1)
+    C(b, cyl('x', 19, 0, 2.5, 18, 22))
+    horn_pocket(b, 'y', -0.1, 1.8, {'x': 0, 'z': 0}, 'x', 1)
+    C(b, cyl('y', 0, 0, 2.5, -0.1, 3.1))
     return b
 
 def head_bottom():
@@ -174,9 +202,12 @@ def antenna_tip():
     return b
 
 def pivot_cup():
-    b = box(-13.2, 13.2, -7.9, 7.9, 0, 8)
-    C(b, box(-11.6, 11.6, -6.3, 6.3, 2, 8.1))
-    U(b, cyl('z', 5.5, 0, 3.5, -3, 0.5))
+    # v0.5: the old closed cup (walls to +-7.9) hit the ankle bracket plate, which sits flush on the servo side.
+    # Now: floor no wider than the servo (+-5.8), one end wall away from the cable, cable end open,
+    # D-shaped pin with a flat side flush with the floor so the part prints lying on that side.
+    b = box(-13.2, 13.2, -5.8, 5.8, 0, 2)
+    U(b, box(-13.2, -11.6, -5.8, 5.8, 2, 8))
+    U(b, cyl('z', 5.5, 0, 3.5, -3, 0.5), box(2, 9, -5.8, 0, -3, 0.5))
     C(b, cyl('z', 5.5, 0, 1.3, -3.1, 2.05))
     return b
 
@@ -185,7 +216,16 @@ def fork_arms(b, s, y_low):
     U(b, box(*X(s, 19, 22), y_low, 0, -7, 7), cyl('x', 0, 0, 7, s * 19, s * 22),
       box(*X(s, 59, 62), y_low, 0, -7, 7), cyl('x', 0, 0, 7, s * 59, s * 62))
     C(b, cyl('x', 0, 0, 1.7, s * 18.5, s * 22.5))
-    C(b, cyl('x', 0, 0, 3.7, s * 58.9, s * 60.8), box(*X(s, 58.9, 60.8), y_low + 0.5, 0, -2.3, 2.3), cyl('x', 0, 0, 2.5, s * 58.5, s * 62.5))
+    horn_pocket(b, 'x', *X(s, 58.9, 60.8), {'y': 0, 'z': 0}, 'y', -1)
+    C(b, cyl('x', 0, 0, 2.5, s * 58.5, s * 62.5))
+    return b
+
+def cable_cuts(b, s, floor_in, toward, end):
+    # MG90S wire leaves the shaft end at the bottom. Channel across the bottom of the shaft-end wall,
+    # plus a 10 x 4.5 mm hole through the back wall (z -8.1..-6.3) at that wall: the 3-pin plug passes through.
+    f6, f10 = floor_in + toward * 6, floor_in + toward * 10
+    C(b, box(*X(s, floor_in, f6), end - 3.4, end + 0.1, -8.2, 8.3),
+      box(*X(s, floor_in, f10), end - 1.4, end + 3.1, -8.2, -6.2))
     return b
 
 def servo_housing(b, s, axis_y):
@@ -195,6 +235,7 @@ def servo_housing(b, s, axis_y):
     C(b, cyl('x', axis_y, 0, 1.3, s * 22.4, s * 26.4))
     for dy in (-8.4, 19.4):
         C(b, cyl('x', axis_y + dy, 0, 0.9, s * 36, s * 42.3))
+    cable_cuts(b, s, 26.3, 1, axis_y - 6.1)
     return b
 
 def thigh(s):
@@ -202,6 +243,7 @@ def thigh(s):
     C(b, box(*X(s, 41.7, 57.7), -6.1, 17.1, -6.3, 8.2))
     for y in (-8.4, 19.4):
         C(b, cyl('x', y, 0, 0.9, s * 41.7, s * 48))
+    cable_cuts(b, s, 57.7, -1, -6.1)  # hip servo
     U(b, box(*X(s, 25, 59.5), -17.8, -11.2, -8.1, 8.1))
     servo_housing(b, s, -40)
     return b
@@ -235,7 +277,8 @@ def foot():
     U(b, box(-8, 8, -13, 0, -23.5, -20.5), cyl('z', 0, 0, 8, -23.5, -20.5),
       box(-8, 8, -13, 0, 17.5, 20.5), cyl('z', 0, 0, 8, 17.5, 20.5))
     C(b, cyl('z', 0, 0, 1.7, -24, -20))
-    C(b, cyl('z', 0, 0, 3.7, 17.4, 19.3), box(-2.3, 2.3, -12.5, 0, 17.4, 19.3), cyl('z', 0, 0, 2.5, 17, 21))
+    horn_pocket(b, 'z', 17.4, 19.3, {'x': 0, 'y': 0}, 'y', -1)
+    C(b, cyl('z', 0, 0, 2.5, 17, 21))
     return b
 
 def sole():
